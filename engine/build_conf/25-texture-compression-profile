@@ -1,6 +1,16 @@
 #!/bin/bash
 
 
+if [ ${HELP_MODE} -ne 0 ]
+then
+	title   "Configuration options for texture compression profiles:"
+	echo -e ""
+	echo -e "\t--with-texture-profile=nvidia-dxtc\tUse DXTC with Nvidia Texture Tools"
+	echo -e "\t--with-texture-profile=nvidia-generic\tUse RGBA with Nvidia Texture Tools"
+	echo -e ""
+	return
+fi
+
 opt_default "texture-profile" "nvidia-dxtc"
 
 TEXTURE_PROFILE=$(opt_get "texture-profile")

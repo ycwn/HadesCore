@@ -1,47 +1,31 @@
 
 
 subsystems = \
-	ai        \
-	angel     \
-	animation \
-	audio     \
-	core      \
-	dynamics  \
-	game           \
-	game/animation \
-	game/driver    \
-	game/hud       \
-	game/intro     \
-	game/menu      \
-	gl    \
-	math  \
-	net   \
-	scene \
+	core \
+	game \
+	gr   \
+	sg   \
 	ui
 
 datasources = \
 	resources
 
-cflags   = -Iinclude/ -DDEBUG -O3
-cxxflags = $(cflags) -fno-rtti -fno-exceptions -fpermissive -std=gnu++0x -Werror=overloaded-virtual
-ldflags  = #-Ldata/ -lres
 
-daemon = 31415
-telnet = 31415
-
-source  = $(foreach system,$(subsystems),$(sort $(wildcard source/$(system)/*.cpp))) $(sort $(wildcard source/*.cpp))
+source  = $(foreach system,$(subsystems) .,$(sort $(wildcard source/$(system)/*.c source/$(system)/*.d)))
 scripts = $(sort $(notdir $(wildcard script/*)))
 shaders = $(sort $(notdir $(wildcard shaders/*)))
-cores   = $(shell grep -c processor /proc/cpuinfo)
+cores   = 0
+arch    = unknown
 autosrc =
 
 export subsystems source   autosrc
 export scripts    shaders
-export cflags     cxxflags ldflags
 
-.PHONY: all build purge clean deploy log log-clean single-core exec trace tarball
+
+.PHONY: all build purge clean tarball
 .PHONY: .FORCE
 .FORCE:
+
 
 all: world
 
@@ -51,10 +35,16 @@ else
 $(error config.rules not found, run configure first)
 endif
 
-include $(wildcard engine/make/*.rules)
+ifeq ("$(wildcard engine/arch_$(arch)/platform.rules)","")
+$(error engine/arch_$(arch)/platform.rules not found, are you sure '$(arch)' is a supported platform)
+endif
 
 
-world: build autogen native-droid package-droid
+include $(wildcard engine/build_make/*.rules)
+include $(wildcard engine/arch_$(arch)/platform.rules)
+
+
+world: build autogen platform-pre platform-build platform-pack platform-post
 
 build:
 	mkdir -p build/
@@ -67,28 +57,6 @@ purge: clean clean-data clean-docs
 clean:
 	rm -rf build/
 
-deploy: deploy-debug
-
-
-deploy-debug:
-#	ant -f engine/android/build.xml installd
-	adb install -r build/bin/CharonCore-debug.apk
-
-deploy-release:
-	ant -f engine/android/build.xml installr
-
-log:
-	adb logcat | grep DEBUG
-
-log-clean:
-	adb logcat -c
-
-exec: autoconst-start
-	adb shell am start -n org.quantumsingularity.charoncore.test/android.app.NativeActivity
-
-trace:
-	$(shell ndk-which addr2line) -e build/obj/local/armeabi-v7a/libcharoncore.so $(A)
-
 tarball: purge
-	(cd .. && tar Jcvf `date +charon-%y%m%d.%H%M.tar.xz` charon/)
+	(cd .. && tar Jcvf `date +hades-%y%m%d.%H%M.tar.xz` hades/)
 

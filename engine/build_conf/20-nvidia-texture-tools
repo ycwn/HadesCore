@@ -1,6 +1,17 @@
 #!/bin/bash
 
 
+if [ ${HELP_MODE} -ne 0 ]
+then
+	title   "Configuration options for Nvidia Texture Tools:"
+	echo -e ""
+	echo -e "\t--enable-nvtt\tEnable the Nvidia Texture Tools"
+	echo -e "\t--disable-nvtt\tDisable the Nvidia Texture Tools"
+	echo -e ""
+	return
+fi
+
+
 opt_default_enable "nvtt"
 
 NVTT_NVCOMPRESS_BIN="$(which nvcompress)"

@@ -6,24 +6,20 @@
 
 
 buildno := $(shell echo $$(($$(cat .git/build) + 1)))
-autosrc += build/version.cpp
+autosrc += build/version.c
 
 
-build/version.cpp: .FORCE
+build/version.c: .FORCE
 	@echo "Updating buildstamp information"
 	@echo $(buildno) > .git/build
 	@printf "\n" >  $@
 	@printf "\n" >> $@
-	@printf "namespace core {\n" >> $@
-	@printf "\tnamespace __build {\n" >> $@
-	@printf "\t\textern const unsigned int  _number    = %d;\n" $(buildno) >> $@
-	@printf "\t\textern const unsigned int  _revision  = %d;\n" $$(git rev-list HEAD --count) >> $@
-	@printf "\t\textern const unsigned int  _timestamp = %d;\n" $$(date +%s) >> $@
-	@printf "\t\tconst char                *_date      = \"%s\";\n" "$$(date)" >> $@
-	@printf "\t\tconst char                *_machine   = \"%s\";\n" "$$(hostname)" >> $@
-	@printf "\t\tconst char                *_user      = \"%s\";\n" "$$(whoami)" >> $@
-	@printf "\t}\n" >> $@
-	@printf "}\n" >> $@
+	@printf "const unsigned int  _hades_build_number    = %d;\n" $(buildno) >> $@
+	@printf "const unsigned int  _hader_build_revision  = %d;\n" $$(git rev-list HEAD --count) >> $@
+	@printf "const unsigned int  _hades_build_timestamp = %d;\n" $$(date +%s) >> $@
+	@printf "const char         *_hades_build_date      = \"%s\";\n" "$$(date)" >> $@
+	@printf "const char         *_hades_build_machine   = \"%s\";\n" "$$(hostname)" >> $@
+	@printf "const char         *_hades_build_user      = \"%s\";\n" "$$(whoami)" >> $@
 	@printf "\n" >> $@
 	@printf "\n" >> $@
 

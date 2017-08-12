@@ -8,9 +8,10 @@ export COLOR_W="$(echo -en '\033[1;37m')"
 export COLOR_N="$(echo -en '\033[0m')"
 
 export ENGINE_BASE="$(dirname $0)"
-export ENGINE_CONF="${ENGINE_BASE}/engine/conf"
-export ENGINE_MAKE="${ENGINE_BASE}/engine/make"
+export ENGINE_CONF="${ENGINE_BASE}/engine/build_conf"
+export ENGINE_MAKE="${ENGINE_BASE}/engine/build_make"
 export CONFIG_FILE="${ENGINE_BASE}/config.rules"
+export HELP_MODE=0
 
 declare -A OPTIONS=()
 
@@ -236,6 +237,8 @@ do
 		--enable-*)  opt_set_enable  "${arg#--enable-*}" ;;
 		--disable-*) opt_set_disable "${arg#--disable-*}" ;;
 		--with-*=*)  opt_set $(echo "${arg:7}" | cut -d = -f 1) $(echo "${arg:7}" |  cut -d = -f 2) ;;
+		--help)      HELP_MODE=1;;
+		-h)          HELP_MODE=1;;
 		*);;
 	esac
 done

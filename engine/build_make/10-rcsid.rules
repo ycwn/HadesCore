@@ -5,19 +5,17 @@
 #
 
 
-autosrc += build/rcsid.cpp
+autosrc += build/rcsid.c
 
 
-build/rcsid.cpp: $(source)
+build/rcsid.c: $(source)
 	@echo "Generating RCS identification"
 	@printf "\n" >  $@
 	@printf "\n" >> $@
-	@printf "namespace Core {\n" >> $@
-	@printf "\tconst char *_rcsid[]={\n" >> $@
-	@for n in $$(git ls-files $^); do printf "\t\t\"\$$Id: %s, %s $$\",\n" $$n "$$(git log --pretty=format:'%H %ai %aN' -1 $$n)" >> $@; done
-	@printf "\t\t0\n" >> $@
-	@printf "\t};\n" >> $@
-	@printf "}\n" >> $@
+	@printf "const char *__core_rcsid[]={\n" >> $@
+	@for n in $$(git ls-files $^); do printf "\t\"\$$Id: %s, %s $$\",\n" $$n "$$(git log --pretty=format:'%H %ai %aN' -1 $$n)" >> $@; done
+	@printf "\t0\n" >> $@
+	@printf "};\n" >> $@
 	@printf "\n" >> $@
 	@printf "\n" >> $@
 

@@ -1,0 +1,64 @@
+#!/bin/bash
+
+
+ARCH_LIST=$(ls engine/arch_* -d | cut -d / -f 2 | cut -d _ -f 2)
+
+
+if [ ${HELP_MODE} -ne 0 ]
+then
+	title   "Configuration options for platform:"
+	echo -e ""
+	echo -e "\t--with-arch\tSelect platform architecture"
+	echo -e "\t\t\tValid architectures:"
+
+	for arch in ${ARCH_LIST}
+	do
+		echo -e "\t\t\t\t${arch}"
+	done
+
+	echo -e ""
+	echo -e "\t--with-cores\tSelect number of CPU cores during compilation (8)"
+	echo -e ""
+	return
+fi
+
+opt_default "arch"  "unknown"
+opt_default "cores" "8"
+
+ARCH=$(opt_get  "arch")
+CORES=$(opt_get "cores")
+ARCH_VALID=0
+
+title "Configuring platform architecture"
+
+for arch in ${ARCH_LIST}
+do
+	if [ "${arch}" = "${ARCH}" ]
+	then
+		detecting "${arch}" "Selected"
+		ARCH_VALID=1
+	else
+		detecting "${arch}" "Found"
+	fi
+done
+
+if [ ${ARCH_VALID} -eq 0 ]
+then
+	die "No valid architecture selected"
+fi
+
+if [ ! -f "engine/arch_${ARCH}/platform.rules" ]
+then
+	msg_r "warning: Selected architecture (${ARCH}) is missing platform.rules; It might not be actually supported"
+fi
+
+
+conf_section "Architecture"
+conf_set     arch  "${ARCH}"
+conf_set     cores "${CORES}"
+conf_export  arch
+conf_export  cores
+
+msg_g "Architecture: ${ARCH}"
+msg_g "Cores:        ${CORES}"
+

@@ -1,6 +1,20 @@
 #!/bin/bash
 
 
+if [ ${HELP_MODE} -ne 0 ]
+then
+	title "No configuration options for Android target"
+	return
+fi
+
+
+if [ "${ARCH}" != "android" ]
+then
+	title "Android not selected, skipping target"
+	return
+fi
+
+
 function detect_android_sdk()
 {
 	local ANDROID_SDK_BIN="$(which android)"
