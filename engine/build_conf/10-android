@@ -1,0 +1,46 @@
+#!/bin/bash
+
+
+function detect_android_sdk()
+{
+	local ANDROID_SDK_BIN="$(which android)"
+	if [ "${ANDROID_SDK_BIN}" != "" ]
+	then
+		readlink -f $(dirname ${ANDROID_SDK_BIN})/..
+	fi
+}
+
+
+function detect_android_ndk()
+{
+	local ANDROID_NDK_BIN="$(which ndk-build)"
+	if [ "${ANDROID_NDK_BIN}" != "" ]
+	then
+		readlink -f $(dirname ${ANDROID_NDK_BIN})
+	fi
+}
+
+
+ANDROID_SDK="$(detect_android_sdk)"
+ANDROID_NDK="$(detect_android_ndk)"
+
+
+title "Configuring Android"
+
+detecting "Android SDK" ${ANDROID_SDK}
+detecting "Android NDK" ${ANDROID_NDK}
+
+conf_section "Android"
+
+if detected "${ANDROID_SDK}" "${ANDROID_NDK}"
+then
+	conf_add_path     "${ANDROID_SDK}/tools" "${ANDROID_SDK}/platform-tools" "${ANDROID_NDK}"
+	conf_add_platform android
+#	conf_set_cflags   android ""
+#	conf_set_cxxflags android ""
+#	conf_set_ldflags  android ""
+	msg_g "Added Android target"
+else
+	msg_r "Android toolchain not detected, disabling Android target"
+fi
+

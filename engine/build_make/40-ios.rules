@@ -1,0 +1,14 @@
+
+######################################################
+#
+# Platform specific parts for iOS
+#
+
+.PHONY: native-ios package-ios
+
+
+native-ios:
+
+
+package-ios:
+

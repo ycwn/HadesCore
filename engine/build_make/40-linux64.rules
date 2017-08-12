@@ -1,0 +1,14 @@
+
+######################################################
+#
+# Platform specific parts for 64-Bit GNU/Linux
+#
+
+.PHONY: native-linux64 package-linux64
+
+
+native-linux64:
+
+
+package-linux64:
+

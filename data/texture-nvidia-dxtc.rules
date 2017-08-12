@@ -1,0 +1,67 @@
+
+
+nc := $(nvtt_nvcompress)
+na := $(nvtt_nvassemble)
+
+nc_bc1 := -bc1 -flip -dds10
+nc_bc2 := -bc2 -flip -dds10
+nc_bc3 := -bc3 -flip -dds10
+
+font_compression := $(nc) $(nc_bc1) {in} {out}
+
+
+#
+# Compress model RGB textures
+#
+$(filter %_rgb.dds,$(models)): $(data)/%.dds: %.png
+	$(nc) $(nc_bc1) $< $@
+
+
+#
+# Compress model RGBA textures (RGB+Alpha)
+#
+$(filter %_rgba.dds,$(models)): $(data)/%.dds: %.png
+	$(nc) $(nc_bc3) $< $@
+
+
+#
+# Compress model RGBS textures (RGB+Specular)
+#
+$(filter %_rgbs.dds,$(models)): $(data)/%.dds: %.png
+	$(nc) $(nc_bc3) $< $@
+
+
+#
+# Compress model normalmap textures (UVW normal + specular exponent)
+#
+$(filter %_norm.dds,$(models)): $(data)/%.dds: %.png
+	$(nc) $(nc_bc3) $< $@
+
+
+#
+# Compress HUD skin textures
+#
+$(filter %.dds,$(skins)): $(data)/%.dds: $(temp)/%.png
+	$(nc) $(nc_bc3) $< $@
+
+
+#
+# Compress extra textures with BC1 compression
+#
+$(textures_bc1:%=$(data)/textures/%.dds): $(data)/%.dds: %.png
+	$(nc) $(nc_bc1) $< $@
+
+
+#
+# Compress extra textures with BC2 compression
+#
+$(textures_bc2:%=$(data)/textures/%.dds): $(data)/%.dds: %.png
+	$(nc) $(nc_bc2) $< $@
+
+
+#
+# Compress extra textures with BC3 compression
+#
+$(textures_bc3:%=$(data)/textures/%.dds): $(data)/%.dds: %.png
+	$(nc) $(nc_bc3) $< $@
+

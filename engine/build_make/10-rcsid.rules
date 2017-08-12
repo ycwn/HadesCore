@@ -1,0 +1,23 @@
+
+######################################################
+#
+# Automagic binary RCS identification
+#
+
+
+autosrc += build/rcsid.cpp
+
+
+build/rcsid.cpp: $(source)
+	@echo "Generating RCS identification"
+	@printf "\n" >  $@
+	@printf "\n" >> $@
+	@printf "namespace Core {\n" >> $@
+	@printf "\tconst char *_rcsid[]={\n" >> $@
+	@for n in $$(git ls-files $^); do printf "\t\t\"\$$Id: %s, %s $$\",\n" $$n "$$(git log --pretty=format:'%H %ai %aN' -1 $$n)" >> $@; done
+	@printf "\t\t0\n" >> $@
+	@printf "\t};\n" >> $@
+	@printf "}\n" >> $@
+	@printf "\n" >> $@
+	@printf "\n" >> $@
+

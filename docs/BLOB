@@ -1,0 +1,41 @@
+
+  Blob File Format
+-----------------------
+
+
+#define BLOB_MAGIC  0x626F6C62
+
+typedef int8_t  i8;
+typedef int16_t i16;
+typedef int32_t i32;
+typedef int64_t i64;
+
+typedef uint8_t  u8;
+typedef uint16_t u16;
+typedef uint32_t u32;
+typedef uint64_t u64;
+
+typedef float  f32;
+typedef double f64;
+
+
+struct _header_t {
+
+	u32 magic;  // BLOB_MAGIC
+	u32 count;
+	u64 entries;
+	u64 strings;
+
+};
+
+struct _entry_t {
+
+	u64 offset;
+	u64 length;
+	u32 revision;
+	u32 name;
+
+};
+
+typedef u8 _strings_t[];
+

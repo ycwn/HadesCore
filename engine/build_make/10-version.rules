@@ -1,0 +1,29 @@
+
+######################################################
+#
+# Automagic revision and timestamp
+#
+
+
+buildno := $(shell echo $$(($$(cat .git/build) + 1)))
+autosrc += build/version.cpp
+
+
+build/version.cpp: .FORCE
+	@echo "Updating buildstamp information"
+	@echo $(buildno) > .git/build
+	@printf "\n" >  $@
+	@printf "\n" >> $@
+	@printf "namespace core {\n" >> $@
+	@printf "\tnamespace __build {\n" >> $@
+	@printf "\t\textern const unsigned int  _number    = %d;\n" $(buildno) >> $@
+	@printf "\t\textern const unsigned int  _revision  = %d;\n" $$(git rev-list HEAD --count) >> $@
+	@printf "\t\textern const unsigned int  _timestamp = %d;\n" $$(date +%s) >> $@
+	@printf "\t\tconst char                *_date      = \"%s\";\n" "$$(date)" >> $@
+	@printf "\t\tconst char                *_machine   = \"%s\";\n" "$$(hostname)" >> $@
+	@printf "\t\tconst char                *_user      = \"%s\";\n" "$$(whoami)" >> $@
+	@printf "\t}\n" >> $@
+	@printf "}\n" >> $@
+	@printf "\n" >> $@
+	@printf "\n" >> $@
+

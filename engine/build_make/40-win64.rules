@@ -1,0 +1,15 @@
+
+######################################################
+#
+# Platform specific parts for 64-Bit Windows
+#
+
+.PHONY: native-win64 package-win64
+
+
+native-win64:
+
+
+package-win64:
+
+

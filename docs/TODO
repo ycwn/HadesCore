@@ -1,0 +1,193 @@
+
+
+Tools:
+	Fix particle designer tools (integrate with blender?)
+	Write geometry viewer
+
+Gameplay:
+	Superweapons!!
+	  * Sunbeam
+	  * Lucifer's Hammer
+	Strategy Mimic
+	Status Attacks!
+	Dice rolls
+	Branching lightning attack (Levelled)
+	Farcaster network
+
+	When exploring a new starsystem, alien artifacts can be found in orbit.
+	Alien artifacts could include megastructures, eg a ringworld or automatic defensive/offensive towers
+
+	Battles:
+		Battle Modes: Single / Multi
+		Automatic battle
+
+	Random Events:
+		Space Monster?
+		Supernovae
+		Rogue Berserker probes
+
+	Black Holes
+	 * Rare
+	 * Special technology to do some weird shit
+
+
+
+Blender displacement mapping experiments
+Render some explosions in blender
+
+
+Add intersection testing
+
+Add HUD data display for starships.
+	[[DEP: Object Selector]]
+
+Add better planetary orbits
+
+Planetary atmospheres
+  ** Maybe use procedural atmopheres generated in GPU? [[DEP:Texture seeded plasma]]
+Clouds? xD
+
+Animated plasma for nebulae and space background [[DEP: Texture seeded plasma]]
+
+Testing:
+	Samsung S2: Mali-400MP: No graphics issues, some frame dropping
+	Moto-G: Adreno 305: Saturation on planetary shaders (Probably texturing mipmap issue).
+
+Texture Packs:
+	* DXTC for Tegra
+	* ATC/3DC for Adreno
+	* PVRTC for PowerVR
+	* Uncompressed RGB8/RGBA8 for all the rest
+
+Scripting:
+	Bind AI::KnowledgeBase [[DEP:KnowledgeBase]]
+	Bind starship_script objective to angel
+	Bind Audio Engine
+	Bind Common game structures
+	Bind Game classes
+	Bind GL
+	Bind network
+	Bind scenegraph
+	Bind UI
+	Port starship_think, civilization_think and starsystem_think objectives to angel
+	Script syntax check before packaging
+	Add error checking in angelscript wrappers
+	Document class hierarchy
+	std::iostream-like i/o classes to replace print()
+
+AI:
+	Unit Roles:
+		Scout
+		Interceptor
+		Light Cruiser
+		Heavy Cruiser
+		Light Battleship
+		Heavy Battleship
+		Carrier
+		PlanetKiller
+
+	Unit Behaviors:
+		Scout:       Phobic, runs away and calls for backup. Can be bait in trap.
+		Interceptor: Chases after, fights until death
+		Ranged:
+		Guard:       Stays in place, attacks within range
+		Creeper:     Avoids contact, attacks when opportunity arises
+
+	Squad Behaviors:
+		Direct assault
+		Ranged attack
+		Entrapment
+		Escort
+
+	Battle Behaviors:
+		Overrun
+		Methodic
+		Retreat
+
+	GameMaster class:
+	   * oversees battle, keeps track of die rolls, awards
+
+	Tech discovery event triggers:
+	  Starship design process if starship component is discovered
+	  Starsystem upgrade process if terraform/starsystem tech
+
+	Battle outcome triggers:
+		Battle review
+		Starship design process
+		Starsystem defense upgrade
+		Fleet production
+
+	Battle review:
+		Activated once battle is over
+		Iterates through battle message logs
+		Determines factors that would affect outcome (more fleet, better weapons, more defense)
+
+	KnowledgeBase:
+		A vector of statements in the form of
+			EntityID - FactID - DataVariant
+		FOAF Style.
+		An additional visibility mask is used to mask out queries and hide
+		information so players can only access what they should know.
+		Interface to query, update, or delete: SQL-style
+		Updates to the KB will trigger events
+		Caching schemes can be used to keep track of data:
+			One can keep track of player strengths
+			One can keep track of discovered tech
+
+	Strategy:
+		Find RTS/4x strategy guides and summarize them in fuzzy rules
+		Identify variables (Game state, player traits, etc)
+		Games:
+			MOO
+			Imperium Galactica 2
+
+	Formations:
+		Rorsharch random generation / Loading from textfile/PNM (For design in GIMP)
+		Format:
+
+			Space   No unit
+			.       Any Unit     (Scout, Interceptor, Cruiser, Battleship, Carrier, PlanetKiller, NonCombat)
+			+       Assault Unit (Cruiser, Battleship, Carrier, PlanetKiller)
+			@       NonCombat (if escort) / Base (if guard)
+			#       Ranged Unit (BattleShip, Carrier, PlanetKiller)
+			*       Heavy Unit (Carrier, PlanetKiller)
+			%       ??? Unit (PlanetKiller)
+
+		Evaluate position of unit-types within formation
+		Test each formation vs all others, plus other patterns (surrounding, surrounded, back-attack, front assault)
+		Evaluation of formation types:
+			* Attacking clusters of enemies of various power
+			* Attacking towers and their defenders
+			* Attacking carriers/battleships and their escorts
+			* Attacking unknown enemies
+			* Attacking unknown bases
+			* Defending towers
+			* Defending carriers/battleships
+			* Escorting carriers/battleships
+			* Looking impressive [[Non-Combat]]
+		Variables:
+			Attack power
+			Defense power
+
+Debugging:
+	Combine autoconst-update and autoconst-gen
+	Bind angelscript debugging facilities with debugging daemon
+	Augment debugging daemon
+	Dynamic script uploading, should be disabled on release build
+	Rename debug::log() to something else
+
+Timeline:
+	Convert Game::Campaign into a Singleton, this will reduce the need to pass pointers around
+	Change acquisition interface of Game::BattlePlan, to remove dependency from Game::Starsystem
+	Move Net::Daemon to Core?
+	Reincarnate automagic constants as console variables
+	Debugger: Make a generic console through telnet protocol
+	QuadTree Influence map
+	Scripted AI
+	Fuzzy Variables and Operators
+	Battle AI
+	Weapons
+	Effects
+	Camera Control [Panning, Rotating, Scaling]
+
+

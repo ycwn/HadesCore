@@ -1,0 +1,26 @@
+
+######################################################
+#
+# Automagic constants
+#
+
+
+autosrc += build/autoconstants.cpp
+
+
+build/autoconstants.cpp: $(source)
+	engine/tools/autoconst-gen.py $(source) > $@
+
+
+autoconst-start: autoconst-stop
+	adb forward tcp:$(daemon) tcp:$(daemon)
+#	(inotifywait -mr -e close_write --format '%w%f' source/ | while read file; do engine/tools/autoconst-update.py localhost 31415 $$file; done)& echo $$! > .inotify
+	(inotifywait -mr -e close_write --format '%w%f' source/ & echo $$! > .inotify) | while read file; do engine/tools/autoconst-update.py localhost 31415 $$file; done&
+
+autoconst-stop:
+	test -f .inotify && kill -KILL `cat .inotify` || true
+	rm -f .inotify
+
+autoconst-update:
+	engine/tools/autoconst-update.py localhost $(daemon) $(source)
+

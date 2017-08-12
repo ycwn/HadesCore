@@ -1,0 +1,41 @@
+#!/bin/bash
+
+
+opt_default_enable "nvtt"
+
+NVTT_NVCOMPRESS_BIN="$(which nvcompress)"
+NVTT_NVASSEMBLE_BIN="$(which nvassemble)"
+
+title "Configuring Nvidia Texture Tools"
+conf_section "Nvidia Texture Tools"
+
+if opt_is_enabled "nvtt"
+then
+
+	detecting "nvcompress" "${NVTT_NVCOMPRESS_BIN}"
+	detecting "nvassemble" "${NVTT_NVASSEMBLE_BIN}"
+
+	if detected "${NVTT_NVCOMPRESS_BIN}" "${NVTT_NVASSEMBLE_BIN}"
+	then
+		conf_set    nvtt_enabled 1
+		conf_set    nvtt_nvcompress "${NVTT_NVCOMPRESS_BIN}"
+		conf_set    nvtt_nvassemble "${NVTT_NVASSEMBLE_BIN}"
+		msg_g "Added Nvidia Texture Tools"
+	else
+		conf_set nvtt_enabled 0
+		conf_set nvtt_nvcompress ""
+		conf_set nvtt_nvassemble ""
+		msg_r "nvcompress or nvassemble not detected, disabling Nvidia Texture Tools"
+	fi
+
+else
+
+	conf_set nvtt_enabled 0
+	conf_set nvtt_nvcompress ""
+	conf_set nvtt_nvassemble ""
+	msg_r "Nvidia Texture Tools disabled"
+
+fi
+
+conf_export nvtt_enabled nvtt_nvcompress nvtt_nvassemble
+

@@ -1,0 +1,36 @@
+
+######################################################
+#
+# Resources and data
+#
+
+.PHONY: data clean-data
+
+datasrc  = $(datasources:%=build/%.blob)
+autosrc += $(datasrc:%.blob=%.s)
+datasym += $(foreach src,$(datasources:%=__build/%.blob),$(shell echo -n "$(src)" | tr -c [0-9a-zA-Z_] _))
+
+
+data: $(datasrc)
+
+clean-data:
+	$(MAKE) -C data/ clean
+
+
+$(datasrc): %.blob: build .FORCE
+	$(MAKE) -C data/ ../$@
+
+
+%.s: %.blob
+	@echo "Generating binary include for $<"
+	@printf "\n" >  $@
+	@printf "\n" >> $@
+	@printf "\t.section .rodata\n" >> $@
+	@printf "\t.global __%s\n" $(shell echo -n "$<" | tr -c [0-9a-zA-Z_] _) >> $@
+	@printf "\n" >> $@
+	@printf "\t.balign 16\n" >> $@
+	@printf "__%s:\n" $(shell echo -n "$<" | tr -c [0-9a-zA-Z_] _) >> $@
+	@printf "\t.incbin \"%s\"\n" "$<" >> $@
+	@printf "\n" >> $@
+	@printf "\n" >> $@
+

@@ -1,0 +1,15 @@
+
+######################################################
+#
+# Platform specific parts for 32-Bit Windows
+#
+
+.PHONY: native-win32 package-win32
+
+
+native-win32:
+
+
+package-win32:
+
+

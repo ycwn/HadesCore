@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="CharonCore">
+
+    <property file="local.properties" />
+    <property file="ant.properties" />
+    <loadproperties srcFile="project.properties" />
+
+    <property name="build.dir" value="../../build" />
+
+    <property name="source.dir" value="src" />
+    <property name="source.absolute.dir" location="${source.dir}" />
+    <property name="gen.absolute.dir" location="${build.dir}/gen" />
+    <property name="resource.absolute.dir" location="../../data/res" />
+    <property name="asset.absolute.dir" location="${build.dir}/assets" />
+    <property name="jar.libs.dir" value="${build.dir}/libs" />
+    <property name="jar.libs.absolute.dir" location="${jar.libs.dir}" />
+    <property name="native.libs.absolute.dir" location="${build.dir}/libs" />
+
+    <!-- Output directories -->
+    <property name="out.dir" value="${build.dir}/bin" />
+    <property name="out.absolute.dir" location="${out.dir}" />
+    <property name="out.classes.absolute.dir" location="${out.dir}/classes" />
+    <property name="out.res.absolute.dir" location="${out.dir}/res" />
+
+    <!-- version-tag: custom -->
+    <import file="${sdk.dir}/tools/ant/build.xml" />
+
+</project>

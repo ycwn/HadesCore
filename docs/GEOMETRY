@@ -1,0 +1,219 @@
+
+  Geometry File Format
+------------------------
+
+#define GEOMETRY_MAGIC   0x006f6567   // 'geo\0'
+
+#define CHUNK_ANIMATION  0x6d696E61   // 'anim'
+#define CHUNK_BOUNDBOX   0x786f6262   // 'bbox'
+#define CHUNK_BONES      0x656e6f62   // 'bone'
+#define CHUNK_FRAGMENT   0x67617266   // 'frag'
+#define CHUNK_GRAFT      0x74667267   // 'grft'
+#define CHUNK_LOD        0x646f6c68   // 'hlod'
+#define CHUNK_INDICES    0x78646e69   // 'indx'
+#define CHUNK_TEXTURE    0x72747874   // 'txtr'
+#define CHUNK_TEXT       0x74786574   // 'text'
+#define CHUNK_VERTICES   0x74726576   // 'vert'
+
+#define VF_T2  0x0001  // Texture coordinates
+#define VF_C4  0x0002  // Colors
+#define VF_N3  0x0004  // Normal vectors
+#define VF_T3  0x0008  // Tangent vectors
+#define VF_B4  0x0010  // Bone matrix indices/weights (2 bones)
+#define VF_B8  0x0030  // Bone matrix indices/weights (4 bones)
+
+#define TEXTURE_MODE_COLORMAP   0x61626772   // 'rgba'
+#define TEXTURE_MODE_NORMALMAP  0x6d726f6e   // 'norm'
+#define TEXTURE_MODE_GLOSSMAP   0x736f6c67   // 'glos'
+
+typedef int8_t   i8;
+typedef int16_t  i16;
+typedef int32_t  i32;
+typedef int64_t  i64;
+
+typedef uint8_t   u8;
+typedef uint16_t  u16;
+typedef uint32_t  u32;
+typedef uint64_t  u64;
+
+typedef float  f32;
+typedef double f64;
+
+
+struct _geometry_t {
+
+	u32 magic;   // GEOMETRY_MAGIC
+	u32 chunks;
+	u32 vformat;
+	u32 iformat;
+
+	struct _chunk_t {
+
+		u32 magic;
+		u32 offset;
+		u32 length;
+		u32 padding;
+
+	};
+
+	_chunk_t chunk[chunks];
+
+};
+
+
+struct _animation_t { // chunk[n].magic = CHUNK_ANIMATION
+
+	u32 name;      // Index of _text_t chunk
+	u32 bones;
+	u32 frames;
+	u32 looping;
+	u32 frametime; // in msec
+
+	struct _frame_t {
+
+		struct _bone_t {
+
+			u32 bone;
+
+			f32 rotation[4];
+			f32 translation[3];
+
+		} bone[bones];
+
+	} frame[frames];
+
+} animations[];
+
+
+struct _boundbox_t { // chunk[n].magic = CHUNK_BOUNDBOX
+
+	u32 name;
+	u32 parent;
+	u32 bone;
+
+	f32 radius;
+	f32 center[3];
+
+	f32 min[3];
+	f32 max[3];
+
+} boundboxen[];
+
+
+struct _bone_t { // chunk[n].magic = CHUNK_BONES
+
+	u32 name
+	u32 parent;
+
+	f32 rotation[4];
+	f32 translation[3];
+
+} bones[];
+
+
+struct _fragment_t { // chunk[n].magic = CHUNK_FRAGMENT
+
+	u32 name;
+	u32 shader;
+
+	f32 ambient[3];
+	f32 diffuse[3];
+	f32 specular[3];
+
+	f32 alpha;
+	f32 exponent;
+	f32 radiance;
+
+	u32 mode;
+	u32 start;
+	u32 count;
+
+	u32 padding;
+
+} fragments[];
+
+
+struct _graftpoint_t { // chunk[n].magic = CHUNK_GRAFT
+
+	u32 name;
+	u32 bone;
+
+	f32 center[3];
+	f32 direction[3];
+	f32 minimum[3];
+	f32 maximum[3];
+
+} graftpoints[];
+
+
+struct _lod_t { // chunk[n].magic = CHUNK_LOD
+
+	u32 frag;
+	u32 level;
+
+	f32 error;
+
+	u32 start;
+	u32 count;
+
+} lodlevels[];
+
+
+struct _index_t { chunk[n].magic = CHUNK_INDICES
+
+#if header::iformat == GL_UNSIGNED_SHORT
+	u16 index;
+#endif
+
+#if header::iformat == GL_UNSIGNED_INT
+	u32 index;
+#endif
+
+} indices[];
+
+
+struct _texture_t { // chunk[n].magic = CHUNK_TEXTURE
+
+	u32 name;
+	u32 mode;
+
+} textures[];
+
+
+struct _text_t { // chunk[n].magic = CHUNK_TEXT
+
+	char text[];
+
+} text;
+
+
+struct _vertex_t { // chunk[n].magic = CHUNK_VERTICES
+
+	f32 x, y, z;
+
+#if header::vformat & VF_T2
+	f32 s, t;
+#endif
+
+#if header::vformat & VF_C4
+	f32 r, g, b, a;
+#endif
+
+#if header::vformat & VF_N3
+	f32 i, j, k;
+#endif
+
+#if header::vformat & VF_T3
+	f32 u, v, w;
+#endif
+
+#if header::vformat & VF_B4
+	f32 n0, w0, n1, w1;
+#endif
+
+#if header::vformat & VF_B8
+	f32 n2, w2, n3, w3;
+#endif
+
+} vertices[];
+

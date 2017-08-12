@@ -1,0 +1,15 @@
+
+######################################################
+#
+# Documentation generation
+#
+
+.PHONY: docs clean-docs
+
+
+docs: $(source)
+	doxygen docs/Doxyfile
+
+clean-docs:
+	rm -rf docs/html/ docs/latex/
+

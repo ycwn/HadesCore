@@ -1,0 +1,34 @@
+#!/bin/bash
+
+
+opt_default "texture-profile" "nvidia-dxtc"
+
+TEXTURE_PROFILE=$(opt_get "texture-profile")
+TEXTURE_PROFILE_VALID=0
+
+title "Configuring texture compression profiles"
+
+for profile in $(ls data/texture-*.rules | cut -d \- -f 2- | cut -d . -f 1)
+do
+	if [ "${profile}" = "${TEXTURE_PROFILE}" ]
+	then
+		detecting "${profile}" "Selected"
+		TEXTURE_PROFILE_VALID=1
+	else
+		detecting "${profile}" "Found"
+	fi
+done
+
+
+if [ ${TEXTURE_PROFILE_VALID} -eq 0 ]
+then
+	die "Texture compression profile ${TEXTURE_PROFILE} does not exist"
+fi
+
+
+conf_section "Texture compression profile"
+conf_set     texture_profile "${TEXTURE_PROFILE}"
+conf_export  texture_profile
+
+msg_g "Texture compression: ${TEXTURE_PROFILE}"
+

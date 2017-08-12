@@ -1,0 +1,70 @@
+
+  Glyph File Format
+------------------------
+
+#define GLYPH_MAGIC    0x66796c67  // 'glph'
+
+#define CHUNK_ASCII_TABLE  0x6d696E61   // 'anim'
+#define CHUNK_GLYPH_TABLE  0x786f6262   // 'bbox'
+#define CHUNK_TEXTURE      0x72747874   // 'txtr'
+
+
+typedef int8_t   i8;
+typedef int16_t  i16;
+typedef int32_t  i32;
+typedef int64_t  i64;
+
+typedef uint8_t   u8;
+typedef uint16_t  u16;
+typedef uint32_t  u32;
+typedef uint64_t  u64;
+
+typedef float  f32;
+typedef double f64;
+
+
+struct glyph_t {
+
+	u32 magic;   // GLYPH_MAGIC
+	u32 chunks;
+
+	struct chunk_t {
+
+		u32 magic;
+		u32 offset;
+		u32 length;
+		u32 padding;
+
+	};
+
+	chunk_t chunk[chunks];
+
+};
+
+struct font_t {
+
+	u32 magic;     // FONT_MAGIC
+	u32 revision;  // FONT_REVISION
+
+	f32 resolution;
+
+	u32 name;
+	u32 pages;
+
+	struct metrics_t {
+
+		f32 top;
+		f32 left;
+		f32 bottom;
+		f32 right;
+		f32 delta;
+
+	} metric_table[256 * pages];
+
+	u32 stringtable_size;              // Align to u32 boundary
+	u8  stringtable[stringtable_size];
+
+	u8 image[ALIGN(image_size, 4)];
+
+};
+

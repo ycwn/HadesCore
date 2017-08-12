@@ -1,0 +1,249 @@
+#!/bin/bash
+
+
+export COLOR_R="$(echo -en '\033[1;31m')"
+export COLOR_G="$(echo -en '\033[1;32m')"
+export COLOR_B="$(echo -en '\033[1;34m')"
+export COLOR_W="$(echo -en '\033[1;37m')"
+export COLOR_N="$(echo -en '\033[0m')"
+
+export ENGINE_BASE="$(dirname $0)"
+export ENGINE_CONF="${ENGINE_BASE}/engine/conf"
+export ENGINE_MAKE="${ENGINE_BASE}/engine/make"
+export CONFIG_FILE="${ENGINE_BASE}/config.rules"
+
+declare -A OPTIONS=()
+
+
+function include()
+{
+    for FILE in $(find "$1" -type f -print | sort)
+    do
+        source $FILE
+    done
+}
+
+
+function title()
+{
+	echo ""
+	echo "${COLOR_W}$1${COLOR_N}"
+}
+
+
+function msg_r()
+{
+	echo "${COLOR_R}$1${COLOR_N}"
+}
+
+
+function msg_g()
+{
+	echo "${COLOR_G}$1${COLOR_N}"
+}
+
+
+function msg_b()
+{
+	echo "${COLOR_B}$1${COLOR_N}"
+}
+
+
+function msg_y()
+{
+	echo "${COLOR_W}$1${COLOR_N}"
+}
+
+
+function detecting()
+{
+	echo -n "Detecting $1... "
+	if [ "$2" != "" ]
+	then
+		echo "$2"
+	else
+		echo "${COLOR_R}Not found${COLOR_N}"
+	fi
+}
+
+
+function die()
+{
+	msg_r "$@"
+	echo
+	exit 1
+}
+
+
+function detected()
+{
+	for str in "$@"
+	do
+		if [ "${str}" = "" ]
+		then
+			return 1
+		fi
+	done
+	return 0
+}
+
+
+function opt_default()
+{
+	if [ "${OPTIONS[$1]}" = "" ]
+	then
+		OPTIONS[$1]=$2
+	fi
+}
+
+
+function opt_default_disable
+{
+	for opt in "$@"
+	do
+		opt_default ${opt} "0"
+	done
+}
+
+
+function opt_default_enable
+{
+	for opt in "$@"
+	do
+		opt_default ${opt} "1"
+	done
+}
+
+
+function opt_set()
+{
+	OPTIONS[$1]=$2
+}
+
+
+function opt_set_disable
+{
+	for opt in "$@"
+	do
+		opt_set ${opt} "0"
+	done
+}
+
+
+function opt_set_enable
+{
+	for opt in "$@"
+	do
+		opt_set ${opt} "1"
+	done
+}
+
+
+function opt_has()
+{
+	test [ "${OPTIONS[$1]}" != "" ]
+}
+
+
+function opt_get()
+{
+	echo ${OPTIONS[$1]}
+}
+
+
+function opt_is_disabled
+{
+	test "${OPTIONS[$1]}" = "0"
+}
+
+
+function opt_is_enabled
+{
+	test "${OPTIONS[$1]}" = "1"
+}
+
+
+function conf_begin()
+{
+	{
+		echo ""
+	} > "${CONFIG_FILE}"
+}
+
+
+function conf_end()
+{
+	{
+		echo ""
+	} >> "${CONFIG_FILE}"
+}
+
+
+function conf_section()
+{
+	{
+		echo ""
+		echo "###########"
+		echo "# $1"
+	} >> "${CONFIG_FILE}"
+}
+
+
+function conf_set()
+{
+	{
+		echo "$1 := $2"
+	} >> "${CONFIG_FILE}"
+}
+
+
+function conf_export()
+{
+	{
+		echo "export $@"
+	} >> "${CONFIG_FILE}"
+}
+
+
+function conf_add_path()
+{
+	{
+		echo ""
+		for path in "$@"
+		do
+			echo -e "export PATH := \x24(PATH):${path}"
+		done
+	} >> "${CONFIG_FILE}"
+}
+
+
+function conf_add_platform()
+{
+	{
+		echo ""
+		for pf in "$@"
+		do
+			echo "platforms += ${pf}"
+			echo "platform_${pf} := 1"
+		done
+	} >> "${CONFIG_FILE}"
+}
+
+
+for arg in $@
+do
+	case ${arg} in
+		--enable-*)  opt_set_enable  "${arg#--enable-*}" ;;
+		--disable-*) opt_set_disable "${arg#--disable-*}" ;;
+		--with-*=*)  opt_set $(echo "${arg:7}" | cut -d = -f 1) $(echo "${arg:7}" |  cut -d = -f 2) ;;
+		*);;
+	esac
+done
+
+
+conf_begin
+include "${ENGINE_CONF}"/
+conf_end
+
+echo
+
