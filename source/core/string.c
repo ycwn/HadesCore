@@ -2,27 +2,10 @@
 
 #include "core/system.h"
 #include "core/types.h"
-#include "core/object.h"
 #include "core/string.h"
 
 
 #define GET_CH(buf) ((*buf)? *buf++: 0)
-
-OBJECT_MKTYPEID(string);
-
-OBJECT_VTABLE_EX(
-	string, heap,
-	OBJECT_VT_CONSTRUCT(&string_new),
-	OBJECT_VT_DESTRUCT( &string_free),
-	OBJECT_VT_TYPEID(string)
-);
-
-OBJECT_VTABLE_EX(
-	string, stack,
-	OBJECT_VT_CONSTRUCT(&string_new),
-	OBJECT_VT_DESTRUCT( &string_del),
-	OBJECT_VT_TYPEID(string)
-);
 
 
 
@@ -60,21 +43,15 @@ static char *str_alloc(string *self, size_t len)
 
 
 
-string *string_new(void *ptr)
+void str_new(string *self)
 {
-
-	string *self = (ptr != NULL)?
-		object_new_ex(string, stack, ptr):
-		object_new_ex(string, heap,  malloc(sizeof(string)));
-
-	mzero(self->buf);
-	return self;
+	memset(self->buf, 0, sizeof(self->buf));
 
 }
 
 
 
-void string_del(string *self)
+void str_del(string *self)
 {
 
 	if (self->magic == CORE_STR_MAGIC)
@@ -83,16 +60,6 @@ void string_del(string *self)
 	self->magic    = 0;
 	self->capacity = 0;
 	self->str      = NULL;
-
-}
-
-
-
-void string_free(string *self)
-{
-
-	string_del(self);
-	free(self);
 
 }
 

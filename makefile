@@ -7,8 +7,7 @@ subsystems = \
 	sg   \
 	ui
 
-datasources = \
-	resources
+datasources =
 
 
 source  = $(foreach system,$(subsystems) .,$(sort $(wildcard source/$(system)/*.c source/$(system)/*.d)))
@@ -51,12 +50,14 @@ build:
 
 autogen: $(autosrc)
 
+clean: platform-clean
+
 purge: clean clean-data clean-docs
 	rm config.rules
 
-clean:
+armageddon:
 	rm -rf build/
 
-tarball: purge
+tarball: armageddon
 	(cd .. && tar Jcvf `date +hades-%y%m%d.%H%M.tar.xz` hades/)
 

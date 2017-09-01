@@ -15,7 +15,7 @@ build/version.c: .FORCE
 	@printf "\n" >  $@
 	@printf "\n" >> $@
 	@printf "const unsigned int  _hades_build_number    = %d;\n" $(buildno) >> $@
-	@printf "const unsigned int  _hader_build_revision  = %d;\n" $$(git rev-list HEAD --count) >> $@
+	@printf "const unsigned int  _hades_build_revision  = %d;\n" $$(git rev-list HEAD --count) >> $@
 	@printf "const unsigned int  _hades_build_timestamp = %d;\n" $$(date +%s) >> $@
 	@printf "const char         *_hades_build_date      = \"%s\";\n" "$$(date)" >> $@
 	@printf "const char         *_hades_build_machine   = \"%s\";\n" "$$(hostname)" >> $@

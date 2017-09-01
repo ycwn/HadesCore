@@ -10,8 +10,6 @@
 
 typedef struct _string_t {
 
-	OBJECT;
-
 	union {
 
 		char buf[CORE_STR_BUFFER];
@@ -27,9 +25,8 @@ typedef struct _string_t {
 } string;
 
 
-string *string_new(void *ptr);
-void    string_del( string *self);
-void    string_free(string *self);
+void str_new(string *self);
+void str_del(string *self);
 
 const char *str_c(const string *self);
 int         str_i(const string *self);
