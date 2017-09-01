@@ -30,6 +30,8 @@ graphics *gr_create()
 	gr->var.vsync_adaptive    = var_new("gr.vsync.adaptive",    "1");
 	gr->var.triple_buffer     = var_new("gr.tribuffer",         "0");
 
+	gr->window = NULL;
+
 	return gr;
 
 }
