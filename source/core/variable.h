@@ -20,7 +20,7 @@ typedef struct _variable_t {
 
 
 variable *var_new(const char *name, const char *def);
-void      var_del( variable *self);
+void      var_del(variable *self);
 
 const char *var_name(const variable *self);
 

@@ -2,7 +2,9 @@
 
 #include "core/system.h"
 #include "core/types.h"
+#include "core/debug.h"
 #include "core/list.h"
+#include "core/logger.h"
 #include "core/string.h"
 #include "core/variable.h"
 
@@ -87,6 +89,9 @@ variable *var_set(const char *name, const char *value)
 		return NULL;
 
 	var_set_s(var, value);
+
+	log_i("var: Set '%s' to '%s'", name, value);
+
 	return var;
 
 }
