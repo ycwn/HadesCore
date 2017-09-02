@@ -22,7 +22,7 @@ typedef struct {
 
 	} buildinfo;
 
-	graphics *gr;
+	graphics *gfx;
 	sound    *snd;
 	input    *in;
 
