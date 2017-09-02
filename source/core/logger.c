@@ -114,7 +114,6 @@ static struct _log_file_html_t {
 	.style = {
 		"", // Debug:    Blue
 		"", // Info:     Normal
-		"", // Bold:     White/Bold
 		"", // Warn:     Green
 		"", // Error:    Yellow
 		""  // Critical: Red
@@ -155,7 +154,7 @@ void log_printf(int level, const char *msg, ...)
 
 		va_start(argv, msg);
 
-		char buf[size + 2];
+		char buf[size];
 		int len = vsnprintf(buf, size, msg, argv);
 
 		va_end(argv);
@@ -166,9 +165,6 @@ void log_printf(int level, const char *msg, ...)
 			continue;
 
 		}
-
-		buf[len++] = '\n';
-		buf[len]   = '\0';
 
 		for (int n=0; n < LOG_MAX_SLOTS; n++)
 			if (log_writers[n] != NULL && log_levels[n] <= level)
@@ -267,7 +263,8 @@ void terminal_plain_write(log_writer *self, int level, const char *buf, int len)
 	};
 
 	fputs(level_text[level], stdout);
-	fputs(buf, stdout);
+	fputs(buf,  stdout);
+	fputc('\n', stdout);
 
 }
 
@@ -300,6 +297,7 @@ void terminal_color_write(log_writer *self, int level, const char *buf, int len)
 	fputs(level_text[level], stdout);
 	fputs(buf, stdout);
 	fputs(ltc->color_def, stdout);
+	fputc('\n', stdout);
 
 }
 
@@ -343,7 +341,8 @@ void file_plain_write(log_writer *self, int level, const char *buf, int len)
 	};
 
 	fputs(level_text[level], lfp->file);
-	fputs(buf, lfp->file);
+	fputs(buf,  lfp->file);
+	fputc('\n', lfp->file);
 
 }
 
