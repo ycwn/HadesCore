@@ -5,6 +5,7 @@
 #include "core/dlang.h"
 #include "core/hades.h"
 #include "core/list.h"
+#include "core/logger.h"
 #include "core/string.h"
 #include "core/variable.h"
 
@@ -52,7 +53,8 @@ SDL_INIT_GAMECONTROLLER
 
 	hades_core.terminate = false;
 
-	//SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Hades Core", "YOU HAVE NO RESPECT FOR LOGIC", NULL);
+	log_create();
+	log_set_writer(0, log_writer_terminal_color, NULL);
 
 	for (int n=0; n < argv->num; n++) {
 
@@ -74,6 +76,7 @@ void hades_destroy()
 {
 
 	gr_destroy(hades_core.gr);
+	log_destroy();
 
 	SDL_Quit();
 
@@ -102,3 +105,37 @@ bool hades_update()
 	return !hades_core.terminate;
 
 }
+
+
+
+const void *hades_fail(const char *msg, ...)
+{
+	va_list argv;
+	int     size = 1024;
+
+	while (1) {
+
+		va_start(argv, msg);
+
+		char buffer[size];
+		int len = vsnprintf(buffer, size, msg, argv);
+
+		va_end(argv);
+
+		if (len < 0 || len >= size) {
+
+			size *= 2;
+			continue;
+
+		}
+
+		log_printf(LOG_CRITICAL, buffer);
+		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Hades Core", buffer, NULL);
+		break;
+
+	}
+
+	return NULL;
+
+}
+

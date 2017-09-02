@@ -34,7 +34,7 @@ typedef struct {
 const hades *hades_create(const dl_array *argv);
 void         hades_destroy();
 bool         hades_update();
-
+const void  *hades_fail(const char *msg, ...);
 
 
 #endif
