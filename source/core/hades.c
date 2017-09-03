@@ -6,6 +6,7 @@
 #include "core/dlang.h"
 #include "core/hades.h"
 #include "core/list.h"
+#include "core/blob.h"
 #include "core/logger.h"
 #include "core/string.h"
 #include "core/variable.h"
@@ -58,6 +59,10 @@ SDL_INIT_GAMECONTROLLER
 	log_create();
 	log_set_writer(0, log_writer_terminal_color, NULL);
 
+	blob_create();
+	blob_load("build/data0.blob");
+	blob_finalize();
+
 	if ((hades_core.gfx = gr_create()) == NULL)
 		return hades_fail("core: Failed to initialize graphics!\n%s", SDL_GetError());
 
@@ -76,6 +81,7 @@ void hades_destroy()
 {
 
 	gr_destroy(hades_core.gfx);
+	blob_destroy();
 	log_destroy();
 
 	SDL_Quit();

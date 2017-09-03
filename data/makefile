@@ -59,14 +59,14 @@ cubefaces := _0_pos_x _1_neg_x _2_pos_y _3_neg_y _4_pos_z _5_neg_z
 all:
 
 clean:
-	rm -f $(build)/resources.blob
+	rm -f $(build)/data0.blob
 	rm -rf $(data) $(temp)
 
 build:
 	mkdir -p $(datadirs:%=$(data)/%) $(datadirs:%=$(temp)/%)
 
 
-$(build)/resources.blob: build $(datafiles)
+$(build)/data0.blob: build $(datafiles)
 	$(pt) -c -C $(data) -Fb $@
 
 

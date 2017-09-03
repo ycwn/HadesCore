@@ -7,7 +7,8 @@ subsystems = \
 	sg   \
 	ui
 
-datasources =
+datasources = \
+	data0
 
 
 source  = $(foreach system,$(subsystems) .,$(sort $(wildcard source/$(system)/*.c source/$(system)/*.d)))

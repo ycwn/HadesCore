@@ -7,7 +7,6 @@
 .PHONY: data clean-data
 
 datasrc  = $(datasources:%=build/%.blob)
-autosrc += $(datasrc:%.blob=%.s)
 datasym += $(foreach src,$(datasources:%=__build/%.blob),$(shell echo -n "$(src)" | tr -c [0-9a-zA-Z_] _))
 
 

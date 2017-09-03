@@ -10,6 +10,14 @@
 #include <string.h>
 #include <stdarg.h>
 
+#include <errno.h>
+#include <fcntl.h>
+#include <unistd.h>
+
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <sys/mman.h>
+
 #define VK_NO_PROTOTYPES
 
 #include <vulkan/vulkan.h>
