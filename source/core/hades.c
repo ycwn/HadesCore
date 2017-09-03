@@ -7,6 +7,7 @@
 #include "core/hades.h"
 #include "core/list.h"
 #include "core/blob.h"
+#include "core/chrono.h"
 #include "core/logger.h"
 #include "core/string.h"
 #include "core/variable.h"
@@ -35,8 +36,7 @@ const hades *hades_create(const dl_array *argv)
 
 	if (SDL_Init(SDL_INIT_EVENTS) < 0)
 		return hades_fail("SDL initialization failed: %s\n", SDL_GetError());
-SDL_INIT_TIMER
-
+/*
 SDL_INIT_AUDIO
 
 SDL_INIT_JOYSTICK
@@ -63,6 +63,8 @@ SDL_INIT_GAMECONTROLLER
 	blob_load("build/data0.blob");
 	blob_finalize();
 
+	chrono_create();
+
 	if ((hades_core.gfx = gr_create()) == NULL)
 		return hades_fail("core: Failed to initialize graphics!\n%s", SDL_GetError());
 
@@ -81,6 +83,8 @@ void hades_destroy()
 {
 
 	gr_destroy(hades_core.gfx);
+
+	chrono_destroy();
 	blob_destroy();
 	log_destroy();
 
