@@ -281,7 +281,7 @@ int blob_find(int id, const char *path, uint revision, int match, bool reverse)
 const char *blob_get_name(int id)
 {
 
-	return (id >= 0 && id < entries_num)? entries[id].name: NULL;
+	return (id >= 0 && id < entries_num)? entries[id].name: "";
 
 }
 
@@ -405,9 +405,9 @@ index_entry *find_last_revision(const char *name)
 int index_entry_cmp(const index_entry *a, const index_entry *b)
 {
 
-	const int namediff = strcmp(b->name, a->name);
+	const int namediff = strcmp(a->name, b->name);
 	return  (namediff    != 0)?           namediff:
-		(a->revision != b->revision)? b->revision - a->revision: b->pack - a->pack;
+		(a->revision != b->revision)? a->revision - b->revision: a->pack - b->pack;
 
 }
 
