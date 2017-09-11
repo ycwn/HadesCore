@@ -9,7 +9,7 @@ fontsrc    := $(wildcard fonts/*.conf)
 modelsrc   := $(shell grep -v '\#' models/models.conf)
 musicsrc   := $(wildcard music/*.ogg)
 scriptsrc  := $(shell find ../script -type f -iname '*.as')
-shadersrc  := $(shell find ../shaders -type f -iname '*.shader' -o -iname '*.glsl')
+shadersrc  := $(wildcard ../shaders/*.shader)
 skinsrc    := $(shell cat hud/skins.conf)
 uidefrc    := $(shell find hud/ -type f -iname '*.ui')
 soundfxsrc :=
@@ -23,7 +23,7 @@ font_aa  := 4
 
 ft := ../engine/tools/fonttool.py
 pt := ../engine/tools/blobtool.py
-pg := ../engine/tools/planetgen.py
+sc := ../engine/tools/shaderc.py
 st := ../engine/tools/skintool.py
 
 
@@ -36,7 +36,7 @@ models   += $(patsubst %.png,$(data)/%.dds,$(foreach mdl,$(modelsrc),$(wildcard 
 models   += $(patsubst %.png,$(data)/%.dds,$(foreach mdl,$(modelsrc),$(wildcard models/$(mdl)_norm.png)))
 music     = $(musicsrc:%=$(data)/%)
 scripts   = $(scriptsrc:../%=$(data)/%)
-shaders   = $(shadersrc:../%=$(data)/%)
+shaders   = $(shadersrc:../%.shader=$(data)/%.a)
 skins     = $(skinsrc:%=$(data)/hud/%.dds)
 skins    += $(skinsrc:%=$(data)/hud/%.xml)
 uidefs    = $(uidefrc:%=$(data)/%)
@@ -87,8 +87,15 @@ $(fonts): $(data)/%.glyph: %.conf
 #
 # Copy scripts and shaders over
 #
-$(scripts) $(shaders): $(data)/%: ../%
+$(scripts): $(data)/%: ../%
 	@cp -v $< $@
+
+
+#
+# Compile shaders
+#
+$(shaders): $(data)/%.a: ../%.shader
+	$(sc) -I../shaders/sys -K -o $@ $<
 
 
 #

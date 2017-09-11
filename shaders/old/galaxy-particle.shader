@@ -6,7 +6,7 @@
 #shader  galaxy::particle
 #stage   550
 
-#blend add, src-alpha, one
+#blend color-buffer, add, src-alpha, one
 #faces front
 #depth lequal
 #write depth:off
