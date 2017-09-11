@@ -42,8 +42,8 @@ static inline float clampf(float x, float min, float max) { return minf(maxf(x, 
 
 
 #define countof(x) (sizeof(x) / sizeof((x)[0]))
-#define mzero(x)   memset((x), 0, sizeof(x))
-
+#define mzero(x)   memset((x),  0, sizeof(x))
+#define szero(x)   memset(&(x), 0, sizeof(x))
 
 #endif
 

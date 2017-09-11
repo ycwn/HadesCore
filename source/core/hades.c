@@ -22,11 +22,12 @@ extern const char         *_hades_build_date;
 extern const char         *_hades_build_machine;
 extern const char         *_hades_build_user;
 
+static hades hades_core;
+
+
 static void process_environment();
 static void process_command_line(const dl_array *argv);
 
-
-static hades hades_core;
 
 
 const hades *hades_create(const dl_array *argv)
