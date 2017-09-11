@@ -8,10 +8,6 @@
 #define GR_VKSYM_DEF(sym) PFN_##sym sym = NULL;
 #define GR_VKSYM(sym)     if ((sym = (PFN_##sym)vkGetInstanceProcAddr(gr->vk.instance, #sym)) == NULL) log_d("graphics: " #sym "() == NULL!");
 
-#define GR_SWAPCHAIN_MAX      4
-#define GR_INSTANCE_EXT_MAX  64
-#define GR_DEVICE_EXT_MAX    64
-
 GR_VKSYM_EXT(vkAllocateCommandBuffers);
 GR_VKSYM_EXT(vkAllocateDescriptorSets);
 GR_VKSYM_EXT(vkAllocateMemory);
@@ -176,6 +172,8 @@ typedef struct _graphics_t {
 		VkDescriptorSetLayout descriptor_uniform_layout;
 		VkDescriptorSetLayout descriptor_texture_layout;
 
+		VkPipelineLayout pipeline_layout;
+
 	} vk;
 
 } graphics;
@@ -188,9 +186,10 @@ bool gr_request_instance_extension(graphics *gr, const char *ext);
 bool gr_request_device_extension(  graphics *gr, const char *ext);
 
 bool gr_set_video(graphics *gr);
+bool gr_build_pipeline(graphics *gr, const char *file);
+
 void gr_submit(graphics *gr);
 
 
 #endif
-
 

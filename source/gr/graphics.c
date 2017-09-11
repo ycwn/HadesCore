@@ -8,7 +8,12 @@
 #include "core/string.h"
 #include "core/variable.h"
 
+#include "gr/limits.h"
 #include "gr/graphics.h"
+#include "gr/vertexformat.h"
+#include "gr/framebuffer.h"
+#include "gr/rendertarget.h"
+#include "gr/shader.h"
 
 
 GR_VKSYM_DEF(vkAllocateCommandBuffers);
@@ -143,6 +148,8 @@ static const char *validation_extensions[]={
 
 static inline bool fail_msg(const char *msg) { log_d(msg); return false; }
 
+static void reset(graphics *gr);
+static void destroy(graphics *gr);
 static bool init_vulkan(graphics *gr);
 static bool init_device(graphics *gr);
 static bool init_swapchain(graphics *gr);
@@ -150,8 +157,6 @@ static bool init_pipeline(graphics *gr);
 static bool init_commandpool(graphics *gr);
 static bool init_synchronization(graphics *gr);
 static bool init_descriptors(graphics *gr);
-static void reset(graphics *gr);
-static void destroy(graphics *gr);
 
 static VKAPI_ATTR VkBool32 VKAPI_CALL debug(
 		VkDebugReportFlagsEXT      flags,
@@ -195,6 +200,10 @@ graphics *gr_create()
 
 	reset(gr);
 
+	gr_rendertarget_create(gr);
+	gr_framebuffer_create(gr);
+	gr_shader_create(gr);
+
 	return gr;
 
 }
@@ -206,6 +215,10 @@ void gr_destroy(graphics *gr)
 
 	if (gr == NULL)
 		return;
+
+	gr_shader_destroy();
+	gr_framebuffer_destroy();
+	gr_rendertarget_destroy();
 
 	destroy(gr);
 
@@ -219,6 +232,124 @@ void gr_destroy(graphics *gr)
 
 	SDL_Vulkan_UnloadLibrary();
 	SDL_QuitSubSystem(SDL_INIT_VIDEO);
+
+}
+
+
+
+void reset(graphics *gr)
+{
+
+	gr->window = NULL;
+
+	gr->vk.instance = NULL;
+	gr->vk.device   = NULL;
+	gr->vk.gpu      = NULL;
+
+ 	memset(&gr->vk.memory_properties, 0, sizeof(gr->vk.memory_properties));
+
+	gr->vk.graphics_queue_index = -1;
+	gr->vk.graphics_queue_count =  0;
+	gr->vk.graphics_queue       = NULL;
+
+	gr->vk.compute_queue_index = -1;
+	gr->vk.compute_queue_count =  0;
+	gr->vk.compute_queue       = NULL;
+
+	gr->vk.transfer_queue_index = -1;
+	gr->vk.transfer_queue_count =  0;
+	gr->vk.transfer_queue       = NULL;
+
+	gr->vk.presentation_queue_index = -1;
+	gr->vk.presentation_queue_count =  0;
+	gr->vk.presentation_queue       = NULL;
+
+	gr->vk.surface = NULL;
+
+	gr->vk.swapchain_width  = 0;
+	gr->vk.swapchain_height = 0;
+	gr->vk.swapchain_length = 0;
+	gr->vk.swapchain_curr   = -1;
+	gr->vk.swapchain_format = VK_FORMAT_UNDEFINED;
+	gr->vk.swapchain        = NULL;
+
+	gr->vk.command_pool = NULL;
+
+	mzero(gr->vk.command_buffer);
+
+	gr->vk.transfer_pool   = NULL;
+	gr->vk.transfer_buffer = NULL;
+
+	gr->vk.signal_image_ready     = NULL;
+	gr->vk.signal_render_complete = NULL;
+
+	gr->vk.descriptor_uniform_pool = NULL;
+	gr->vk.descriptor_texture_pool = NULL;
+
+	gr->vk.descriptor_uniform_layout = NULL;
+	gr->vk.descriptor_texture_layout = NULL;
+
+	gr->vk.pipeline_layout = NULL;
+
+}
+
+
+
+void destroy(graphics *gr)
+{
+
+	if (gr->vk.pipeline_layout != NULL)
+		vkDestroyPipelineLayout(gr->vk.gpu, gr->vk.pipeline_layout, NULL);
+
+	if (gr->vk.descriptor_uniform_layout != NULL)
+		vkDestroyDescriptorSetLayout(gr->vk.gpu, gr->vk.descriptor_uniform_layout, NULL);
+
+	if (gr->vk.descriptor_texture_layout != NULL)
+		vkDestroyDescriptorSetLayout(gr->vk.gpu, gr->vk.descriptor_texture_layout, NULL);
+
+	if (gr->vk.descriptor_uniform_pool != NULL)
+		vkDestroyDescriptorPool(gr->vk.gpu, gr->vk.descriptor_uniform_pool, NULL);
+
+	if (gr->vk.descriptor_texture_pool != NULL)
+		vkDestroyDescriptorPool(gr->vk.gpu, gr->vk.descriptor_texture_pool, NULL);
+
+	if (gr->vk.signal_render_complete != NULL)
+		vkDestroySemaphore(gr->vk.gpu, gr->vk.signal_render_complete, NULL);
+
+	if (gr->vk.signal_image_ready != NULL)
+		vkDestroySemaphore(gr->vk.gpu, gr->vk.signal_image_ready, NULL);
+
+	if (gr->vk.command_pool != NULL)
+		vkDestroyCommandPool(gr->vk.gpu, gr->vk.command_pool, NULL);
+
+	if (gr->vk.transfer_pool != NULL)
+		vkDestroyCommandPool(gr->vk.gpu, gr->vk.transfer_pool, NULL);
+
+	if (gr->vk.swapchain != NULL) {
+
+		for (int n=0; n < gr->vk.swapchain_length; n++)
+			vkDestroyImageView(gr->vk.gpu, gr->vk.swapchain_views[n], NULL);
+
+		vkDestroySwapchainKHR(gr->vk.gpu, gr->vk.swapchain, NULL);
+
+	}
+
+	if (gr->vk.gpu != NULL)
+		vkDestroyDevice(gr->vk.gpu, NULL);
+
+	if (gr->vk.surface != NULL)
+		vkDestroySurfaceKHR(gr->vk.instance, gr->vk.surface, NULL);
+
+//	if (callback != NULL)
+//		vkDestroyDebugReportCallbackEXT(instance, callback, NULL);
+
+	if (gr->vk.instance != NULL)
+		vkDestroyInstance(gr->vk.instance, NULL);
+
+	if (gr->window != NULL)
+		SDL_DestroyWindow(gr->window);
+
+	reset(gr);
 
 }
 
@@ -278,7 +409,9 @@ bool gr_set_video(graphics *gr)
 
 	if (gr->window == NULL ||
 		!init_vulkan(gr)      || !init_device(gr)          || !init_swapchain(gr)   ||
-		!init_commandpool(gr) || !init_synchronization(gr) || !init_descriptors(gr)) {
+		!init_commandpool(gr) || !init_synchronization(gr) || !init_descriptors(gr) ||
+
+		!gr_framebuffer_init()) {
 
 		log_e("graphics: Graphics initialization sequence failed");
 		destroy(gr);
@@ -286,6 +419,8 @@ bool gr_set_video(graphics *gr)
 		return false;
 
 	}
+
+	gr_shader_load("shaders/triangle.a");
 
 	log_i("graphics: Graphics initialization sequence complete");
 
@@ -869,120 +1004,25 @@ bool init_descriptors(graphics *gr)
 
 	}
 
+	const VkDescriptorSetLayout descriptors[] = {
+		gr->vk.descriptor_uniform_layout,
+		gr->vk.descriptor_texture_layout
+	};
+
+	VkPipelineLayoutCreateInfo plci = {};
+
+	plci.sType                  = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+	plci.setLayoutCount         = countof(descriptors);
+	plci.pSetLayouts            = &descriptors[0];
+	plci.pushConstantRangeCount = 0;
+	plci.pPushConstantRanges    = 0;
+
+	VkPipelineLayout layout = NULL;
+
+	if (vkCreatePipelineLayout(gr->vk.gpu, &plci, NULL, &gr->vk.pipeline_layout) != VK_SUCCESS)
+		return false;
+
 	return true;
-
-}
-
-
-
-void reset(graphics *gr)
-{
-
-	gr->window = NULL;
-
-	gr->vk.instance = NULL;
-	gr->vk.device   = NULL;
-	gr->vk.gpu      = NULL;
-
- 	memset(&gr->vk.memory_properties, 0, sizeof(gr->vk.memory_properties));
-
-	gr->vk.graphics_queue_index = -1;
-	gr->vk.graphics_queue_count =  0;
-	gr->vk.graphics_queue       = NULL;
-
-	gr->vk.compute_queue_index = -1;
-	gr->vk.compute_queue_count =  0;
-	gr->vk.compute_queue       = NULL;
-
-	gr->vk.transfer_queue_index = -1;
-	gr->vk.transfer_queue_count =  0;
-	gr->vk.transfer_queue       = NULL;
-
-	gr->vk.presentation_queue_index = -1;
-	gr->vk.presentation_queue_count =  0;
-	gr->vk.presentation_queue       = NULL;
-
-	gr->vk.surface = NULL;
-
-	gr->vk.swapchain_width  = 0;
-	gr->vk.swapchain_height = 0;
-	gr->vk.swapchain_length = 0;
-	gr->vk.swapchain_curr   = -1;
-	gr->vk.swapchain_format = VK_FORMAT_UNDEFINED;
-	gr->vk.swapchain        = NULL;
-
-	gr->vk.command_pool = NULL;
-
-	gr->vk.transfer_pool   = NULL;
-	gr->vk.transfer_buffer = NULL;
-
-	gr->vk.signal_image_ready     = NULL;
-	gr->vk.signal_render_complete = NULL;
-
-	gr->vk.descriptor_uniform_pool = NULL;
-	gr->vk.descriptor_texture_pool = NULL;
-
-	gr->vk.descriptor_uniform_layout = NULL;
-	gr->vk.descriptor_texture_layout = NULL;
-
-	mzero(gr->vk.command_buffer);
-
-}
-
-
-
-void destroy(graphics *gr)
-{
-
-	if (gr->vk.descriptor_uniform_layout != NULL)
-		vkDestroyDescriptorSetLayout(gr->vk.gpu, gr->vk.descriptor_uniform_layout, NULL);
-
-	if (gr->vk.descriptor_texture_layout != NULL)
-		vkDestroyDescriptorSetLayout(gr->vk.gpu, gr->vk.descriptor_texture_layout, NULL);
-
-	if (gr->vk.descriptor_uniform_pool != NULL)
-		vkDestroyDescriptorPool(gr->vk.gpu, gr->vk.descriptor_uniform_pool, NULL);
-
-	if (gr->vk.descriptor_texture_pool != NULL)
-		vkDestroyDescriptorPool(gr->vk.gpu, gr->vk.descriptor_texture_pool, NULL);
-
-	if (gr->vk.signal_render_complete != NULL)
-		vkDestroySemaphore(gr->vk.gpu, gr->vk.signal_render_complete, NULL);
-
-	if (gr->vk.signal_image_ready != NULL)
-		vkDestroySemaphore(gr->vk.gpu, gr->vk.signal_image_ready, NULL);
-
-	if (gr->vk.command_pool != NULL)
-		vkDestroyCommandPool(gr->vk.gpu, gr->vk.command_pool, NULL);
-
-	if (gr->vk.transfer_pool != NULL)
-		vkDestroyCommandPool(gr->vk.gpu, gr->vk.transfer_pool, NULL);
-
-	if (gr->vk.swapchain != NULL) {
-
-		for (int n=0; n < gr->vk.swapchain_length; n++)
-			vkDestroyImageView(gr->vk.gpu, gr->vk.swapchain_views[n], NULL);
-
-		vkDestroySwapchainKHR(gr->vk.gpu, gr->vk.swapchain, NULL);
-
-	}
-
-	if (gr->vk.gpu != NULL)
-		vkDestroyDevice(gr->vk.gpu, NULL);
-
-	if (gr->vk.surface != NULL)
-		vkDestroySurfaceKHR(gr->vk.instance, gr->vk.surface, NULL);
-
-//	if (callback != NULL)
-//		vkDestroyDebugReportCallbackEXT(instance, callback, NULL);
-
-	if (gr->vk.instance != NULL)
-		vkDestroyInstance(gr->vk.instance, NULL);
-
-	if (gr->window != NULL)
-		SDL_DestroyWindow(gr->window);
-
-	reset(gr);
 
 }
 
