@@ -74,7 +74,7 @@ void chrono_set_epoch(u64 _epoch)
 
 	now  -= epoch;
 
-	log_i("chrono: Epoch is now %llu", epoch);
+	log_i("chrono: Epoch is now %lu", epoch);
 
 }
 

@@ -148,7 +148,7 @@ static const char *validation_extensions[]={
 };
 
 
-static inline bool fail_msg(const char *msg) { log_d(msg); return false; }
+static inline bool fail_msg(const char *msg) { log_d("%s", msg); return false; }
 
 static void reset(graphics *gr);
 static void destroy(graphics *gr);
@@ -328,7 +328,9 @@ void gr_submit(graphics *gr)
 		gr->vk.swapchain, 1000000000,
 		gr->vk.signal_image_ready, NULL, (uint*)&gr->vk.swapchain_curr);
 
-	gr_commandqueue_enqueue(&triangle, 1);
+	if (triangle.shader != NULL)
+		gr_commandqueue_enqueue(&triangle, 1);
+
 	gr_commandqueue_consume();
 	gr_framebuffer_select();
 
@@ -1188,7 +1190,7 @@ VKAPI_ATTR VkBool32 VKAPI_CALL debug(
 		void                       *ptr)
 {
 
-	log_i("graphics: vulkan(lyr=%s, loc=%d, cod=%d, obj=%d:%ld): %s",
+	log_i("graphics: vulkan(lyr=%s, loc=%ld, cod=%d, obj=%d:%ld): %s",
 		layer_prefix, location, code, obj_type, obj, msg);
 
 	return VK_FALSE;

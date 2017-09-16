@@ -146,7 +146,7 @@ const void *hades_fail(const char *msg, ...)
 
 		}
 
-		log_printf(LOG_CRITICAL, buffer);
+		log_printf(LOG_CRITICAL, "%s", buffer);
 		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Hades Core", buffer, NULL);
 		break;
 

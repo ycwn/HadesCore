@@ -28,7 +28,7 @@ typedef struct _log_writer_t {
 void log_create();
 void log_destroy();
 
-void log_printf(int level, const char *msg, ...);
+void log_printf(int level, const char *msg, ...) __attribute__((format(printf, 2, 3)));
 
 int log_get_slot();
 

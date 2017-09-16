@@ -135,7 +135,7 @@ bool blob_load(const char *file)
 	return true;
 
 fail:
-	log_e("blob: Can't open '%s': %d", errno);
+	log_e("blob: Can't open '%s': %d", file, errno);
 
 	if (ptr != MAP_FAILED)
 		munmap(ptr, len);
@@ -198,7 +198,7 @@ void blob_finalize()
 	sort_index_table(entries, entries_num);
 
 	for (int n=0; n < entries_num; n++)
-		log_i(" %02d  %-48s  %016x  %16lld  %08x",
+		log_i(" %02d  %-48s  %16p  %16ld  %08x",
 			entries[n].pack, entries[n].name, entries[n].data, entries[n].length, entries[n].revision);
 
 }
