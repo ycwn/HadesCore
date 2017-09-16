@@ -3,6 +3,7 @@
 #include "core/system.h"
 #include "core/types.h"
 #include "core/debug.h"
+#include "core/algorithm.h"
 #include "core/blob.h"
 #include "core/logger.h"
 #include "core/string.h"
@@ -59,10 +60,27 @@ static blob         blobs[BLOB_MAX_BLOBS];
 static index_entry *entries     = NULL;
 static uint         entries_num = 0;
 
-static bool         process(int fd, const u8 *buf, u64 len);
-static index_entry *find_first_revision(const char *name);
-static index_entry *find_last_revision( const char *name);
-static int          index_entry_cmp(const index_entry *a, const index_entry *b);
+static bool process(int fd, const u8 *buf, u64 len);
+
+
+static inline int index_entry_compare(const index_entry *a, const index_entry *b)
+{
+	const int namediff = strcmp(a->name, b->name);
+	return  (namediff    != 0)?           namediff:
+		(a->revision != b->revision)? a->revision - b->revision: a->pack - b->pack;
+}
+
+
+static inline int index_entry_match_name(const index_entry *idx, const char *name)
+{
+	return strcmp(idx->name, name);
+}
+
+
+GENERATE_SHELL_SORT(sort_index_table, index_entry, index_entry_compare);
+
+GENERATE_LOWER_BOUND(find_first_revision, index_entry, const char*, index_entry_match_name);
+GENERATE_UPPER_BOUND(find_last_revision,  index_entry, const char*, index_entry_match_name);
 
 
 
@@ -177,7 +195,7 @@ void blob_finalize()
 
 	}
 
-	qsort(entries, entries_num, sizeof(index_entry), (__compar_fn_t)&index_entry_cmp);
+	sort_index_table(entries, entries_num);
 
 	for (int n=0; n < entries_num; n++)
 		log_i(" %02d  %-48s  %016x  %16lld  %08x",
@@ -193,8 +211,8 @@ int blob_open(const char *name, uint rev)
 	if (entries == NULL || name == NULL)
 		return -1;
 
-	index_entry *first = find_first_revision(name);
-	index_entry *last  = find_last_revision(name);
+	const index_entry *first = find_first_revision(entries, entries_num, name);
+	const index_entry *last  = find_last_revision( entries, entries_num, name);
 
 
 	if (first == last)
@@ -206,7 +224,7 @@ int blob_open(const char *name, uint rev)
 	if (rev == BLOB_REV_LAST)
 		return last - entries - 1;
 
-	for (index_entry *idx=first; idx != last; ++idx)
+	for (const index_entry *idx=first; idx != last; ++idx)
 		if (idx->revision == rev)
 			return idx - entries;
 
@@ -345,69 +363,6 @@ bool process(int fd, const u8 *ptr, u64 len)
 	b->len = len;
 
 	return true;
-
-}
-
-
-
-index_entry *find_first_revision(const char *name)
-{
-
-	index_entry *first = entries;
-
-	for (int count=entries_num; count > 0;) { //Lower bound
-
-		int          step = count / 2;
-		index_entry *idx  = first + step;
-
-		if (strcmp(idx->name, name) < 0) {
-
-			first  = ++idx;
-			count -= step + 1;
-
-		} else
-			count = step;
-
-	}
-
-	return first;
-
-}
-
-
-
-index_entry *find_last_revision(const char *name)
-{
-
-	index_entry *last = entries;
-
-	for (int count=entries_num; count > 0;) { //Upper bound
-
-		int          step = count / 2;
-		index_entry *idx  = last + step;
-
-		if (strcmp(idx->name, name) <= 0) {
-
-			last   = ++idx;
-			count -= step + 1;
-
-		} else
-			count = step;
-
-	}
-
-	return last;
-
-}
-
-
-
-int index_entry_cmp(const index_entry *a, const index_entry *b)
-{
-
-	const int namediff = strcmp(a->name, b->name);
-	return  (namediff    != 0)?           namediff:
-		(a->revision != b->revision)? a->revision - b->revision: a->pack - b->pack;
 
 }
 
