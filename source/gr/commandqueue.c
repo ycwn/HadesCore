@@ -30,7 +30,7 @@ static struct queue_t render_queue;
 static struct queue_t merge_queue;
 
 
-static inline int command_compare(gr_command **a, gr_command **b)
+static inline int command_compare(const gr_command **a, const gr_command **b)
 {
 
 	return  ((*a)->shader->stage != (*b)->shader->stage)?
@@ -149,7 +149,9 @@ void gr_commandqueue_consume()
 
 		}
 
-		gr_command *cmd = (command_compare(render, ready) < 0)? *render++: *ready++;
+		gr_command *cmd = (command_compare((const gr_command**)render, (const gr_command**)ready) < 0)?
+				*render++:
+				*ready++;
 
 		if (--cmd->state <= GR_COMMAND_STATE_INACTIVE) {
 

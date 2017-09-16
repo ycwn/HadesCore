@@ -110,7 +110,7 @@ size_t str_len8(const string *self)
 	unsigned int   cp;
 	unsigned char *buf = (unsigned char*)str_c(self);
 
-	while (ch = GET_CH(buf)) {
+	while ((ch = GET_CH(buf))) {
 
 		if      (ch < 0x80) cp = ch;
 		else if (ch < 0xc2) cp = 0;

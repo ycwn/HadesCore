@@ -274,6 +274,7 @@ bool create_depthbuffer()
 		depthstencil_format,
 		GR_RENDERPASS_LOAD_CLEAR | GR_RENDERPASS_LAYOUT_OUT_DS_OPTIMAL);
 
+	return true;
 
 }
 
