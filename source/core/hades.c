@@ -12,6 +12,7 @@
 #include "core/string.h"
 #include "core/variable.h"
 
+#include "gr/limits.h"
 #include "gr/graphics.h"
 
 
@@ -108,6 +109,13 @@ bool hades_update()
 			break;
 
 		}
+
+		chrono_update();
+		//input update
+		//gui update
+		//logic update
+
+		gr_submit(hades_core.gfx);
 
 	}
 

@@ -137,7 +137,7 @@ bool gr_framebuffer_init()
 
 
 
-void gr_framebuffer_update()
+void gr_framebuffer_select()
 {
 
 	fbrt->framebuffer = framebuffer_obj[gfx->vk.swapchain_curr];

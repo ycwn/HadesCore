@@ -14,6 +14,8 @@
 #include "gr/framebuffer.h"
 #include "gr/rendertarget.h"
 #include "gr/shader.h"
+#include "gr/command.h"
+#include "gr/commandqueue.h"
 
 
 GR_VKSYM_DEF(vkAllocateCommandBuffers);
@@ -203,6 +205,8 @@ graphics *gr_create()
 	gr_rendertarget_create(gr);
 	gr_framebuffer_create(gr);
 	gr_shader_create(gr);
+	gr_command_create();
+	gr_commandqueue_create();
 
 	return gr;
 
@@ -216,6 +220,8 @@ void gr_destroy(graphics *gr)
 	if (gr == NULL)
 		return;
 
+	gr_commandqueue_destroy();
+	gr_command_destroy();
 	gr_shader_destroy();
 	gr_framebuffer_destroy();
 	gr_rendertarget_destroy();
@@ -232,6 +238,230 @@ void gr_destroy(graphics *gr)
 
 	SDL_Vulkan_UnloadLibrary();
 	SDL_QuitSubSystem(SDL_INIT_VIDEO);
+
+}
+
+
+
+bool gr_request_instance_extension(graphics *gr, const char *ext)
+{
+
+	for (int n=0; n < gr->ext.instance_num; n++)
+		if (!strcmp(ext, gr->ext.instance[n]))
+			return true;
+
+	if (gr->ext.instance_num >= GR_INSTANCE_EXT_MAX)
+		return false;
+
+	gr->ext.instance[gr->ext.instance_num++] = ext;
+
+	return true;
+
+}
+
+
+
+bool gr_request_device_extension(graphics *gr, const char *ext)
+{
+
+	for (int n=0; n < gr->ext.device_num; n++)
+		if (!strcmp(ext, gr->ext.device[n]))
+			return true;
+
+	if (gr->ext.device_num >= GR_DEVICE_EXT_MAX)
+		return false;
+
+	gr->ext.device[gr->ext.device_num++] = ext;
+
+	return true;
+
+}
+
+static gr_command triangle;
+
+bool gr_set_video(graphics *gr)
+{
+
+	destroy(gr);
+
+	uint flags = SDL_WINDOW_VULKAN;
+
+	if (gr->var.screen_fullscreen->integer)
+		flags |= SDL_WINDOW_FULLSCREEN;
+
+	gr->window = SDL_CreateWindow("Hades Core",
+		SDL_WINDOWPOS_CENTERED,        SDL_WINDOWPOS_CENTERED,
+		gr->var.screen_width->integer, gr->var.screen_height->integer, flags);
+
+	watch("%p", gr->window);
+
+	if (gr->window == NULL ||
+		!init_vulkan(gr)      || !init_device(gr)          || !init_swapchain(gr)   ||
+		!init_commandpool(gr) || !init_synchronization(gr) || !init_descriptors(gr) ||
+
+		!gr_framebuffer_init()) {
+
+		log_e("graphics: Graphics initialization sequence failed");
+		destroy(gr);
+
+		return false;
+
+	}
+
+	gr_command_init(&triangle, 1);
+	triangle.shader = gr_shader_load("shaders/triangle.a");
+	triangle.count  = 3;
+
+	log_i("graphics: Graphics initialization sequence complete");
+
+	return true;
+
+}
+
+
+
+void gr_submit(graphics *gr)
+{
+
+	vkAcquireNextImageKHR(
+		gr->vk.gpu,
+		gr->vk.swapchain, 1000000000,
+		gr->vk.signal_image_ready, NULL, (uint*)&gr->vk.swapchain_curr);
+
+	gr_commandqueue_enqueue(&triangle, 1);
+	gr_commandqueue_consume();
+	gr_framebuffer_select();
+
+	VkCommandBuffer  curr_cmd    = gr->vk.command_buffer[gr->vk.swapchain_curr];
+	gr_rendertarget *curr_target = NULL;
+	gr_shader       *curr_shader = NULL;
+	//vbo             *curr_vbo    = NULL;
+	//ubo             *curr_ubo    = NULL;
+	//core::surface   *curr_tex    = NULL;
+
+	VkCommandBufferBeginInfo cbbi;
+
+	cbbi.sType            = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+	cbbi.flags            = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+	cbbi.pInheritanceInfo = NULL;
+
+	vkBeginCommandBuffer(curr_cmd, &cbbi);
+
+	for (const gr_command **cq=gr_commandqueue_begin(); cq != gr_commandqueue_end(); cq++) {
+
+		const gr_command *cmd = *cq;
+
+		if (curr_target != cmd->shader->rt) {
+
+			if (curr_target != NULL)
+				vkCmdEndRenderPass(curr_cmd);
+
+			curr_target = cmd->shader->rt;
+			curr_shader = NULL;
+
+			VkRenderPassBeginInfo rpi;
+
+			rpi.sType                    = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+			rpi.renderPass               = curr_target->renderpass;
+			rpi.framebuffer              = curr_target->framebuffer;
+			rpi.renderArea.offset.x      = 0;
+			rpi.renderArea.offset.y      = 0;
+			rpi.renderArea.extent.width  = curr_target->width;
+			rpi.renderArea.extent.height = curr_target->height;
+			rpi.clearValueCount          = curr_target->attachment_count;
+			rpi.pClearValues             = curr_target->attachment_clear;
+
+			vkCmdBeginRenderPass(curr_cmd, &rpi, VK_SUBPASS_CONTENTS_INLINE);
+
+		}
+
+		if (curr_shader != cmd->shader) {
+
+			curr_shader = cmd->shader;
+//			curr_vbo    = NULL;
+//			curr_ubo    = NULL;
+//			curr_tex    = NULL;
+
+			vkCmdBindPipeline(curr_cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, curr_shader->pipeline);
+
+		}
+/*
+		if (curr_vbo != cmd->v) {
+
+			curr_vbo = cmd->v;
+
+			if (curr_vbo->get_vertex_buffer() != NULL)
+				vkCmdBindVertexBuffers(
+					curr_cmd,
+					0, 1,
+					&(const VkBuffer){ curr_vbo->get_vertex_buffer() },
+					&(const VkDeviceSize){ 0 });
+
+			if (curr_vbo->get_index_buffer() != NULL)
+				vkCmdBindIndexBuffer(
+					curr_cmd,
+					curr_vbo->get_index_buffer(),
+					0,
+					VK_INDEX_TYPE_UINT16);
+
+		}
+*/
+/*		if (curr_ubo != cmd->u || curr_tex != cmd->t) {
+
+			curr_ubo = cmd->u;
+			curr_tex = cmd->t;
+
+			const VkDescriptorSet descriptors[]={
+				curr_ubo->get_descriptor(),
+				curr_tex->get_descriptor()
+			};
+
+			vkCmdBindDescriptorSets(
+				curr_cmd,
+				VK_PIPELINE_BIND_POINT_GRAPHICS,
+				curr_shader->get_layout(),
+				0, countof(descriptors), &descriptors[0],
+				0, NULL);
+
+		}
+
+		if (curr_vbo->has_indices())
+			vkCmdDrawIndexed(curr_cmd, cmd->count, 1, 0, 0, 0);
+
+		else*/
+			vkCmdDraw(curr_cmd, cmd->count, 1, 0, 0);
+
+	}
+
+	if (curr_target != NULL)
+		vkCmdEndRenderPass(curr_cmd);
+
+	if (vkEndCommandBuffer(curr_cmd) != VK_SUCCESS)
+		return;
+
+	VkSubmitInfo     si;
+	VkPresentInfoKHR pi;
+
+	si.sType                = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+	si.waitSemaphoreCount   = 1;
+	si.pWaitSemaphores      = &gr->vk.signal_image_ready;
+	si.pWaitDstStageMask    = &(const VkPipelineStageFlags){ VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+	si.commandBufferCount   = 1;
+	si.pCommandBuffers      = &gr->vk.command_buffer[gr->vk.swapchain_curr];
+	si.signalSemaphoreCount = 1;
+	si.pSignalSemaphores    = &gr->vk.signal_render_complete;
+
+	vkQueueSubmit(gr->vk.graphics_queue, 1, &si, NULL);
+
+	pi.sType              = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+	pi.waitSemaphoreCount = 1;
+	pi.pWaitSemaphores    = &gr->vk.signal_render_complete;
+	pi.swapchainCount     = 1;
+	pi.pSwapchains        = &gr->vk.swapchain;
+	pi.pImageIndices      = (uint*)&gr->vk.swapchain_curr;
+	pi.pResults           = NULL;
+
+	vkQueuePresentKHR(gr->vk.presentation_queue, &pi);
 
 }
 
@@ -351,87 +581,6 @@ void destroy(graphics *gr)
 
 	reset(gr);
 
-}
-
-
-
-bool gr_request_instance_extension(graphics *gr, const char *ext)
-{
-
-	for (int n=0; n < gr->ext.instance_num; n++)
-		if (!strcmp(ext, gr->ext.instance[n]))
-			return true;
-
-	if (gr->ext.instance_num >= GR_INSTANCE_EXT_MAX)
-		return false;
-
-	gr->ext.instance[gr->ext.instance_num++] = ext;
-
-	return true;
-
-}
-
-
-
-bool gr_request_device_extension(graphics *gr, const char *ext)
-{
-
-	for (int n=0; n < gr->ext.device_num; n++)
-		if (!strcmp(ext, gr->ext.device[n]))
-			return true;
-
-	if (gr->ext.device_num >= GR_DEVICE_EXT_MAX)
-		return false;
-
-	gr->ext.device[gr->ext.device_num++] = ext;
-
-	return true;
-
-}
-
-
-
-bool gr_set_video(graphics *gr)
-{
-
-	destroy(gr);
-
-	uint flags = SDL_WINDOW_VULKAN;
-
-	if (gr->var.screen_fullscreen->integer)
-		flags |= SDL_WINDOW_FULLSCREEN;
-
-	gr->window = SDL_CreateWindow("Hades Core",
-		SDL_WINDOWPOS_CENTERED,        SDL_WINDOWPOS_CENTERED,
-		gr->var.screen_width->integer, gr->var.screen_height->integer, flags);
-
-	watch("%p", gr->window);
-
-	if (gr->window == NULL ||
-		!init_vulkan(gr)      || !init_device(gr)          || !init_swapchain(gr)   ||
-		!init_commandpool(gr) || !init_synchronization(gr) || !init_descriptors(gr) ||
-
-		!gr_framebuffer_init()) {
-
-		log_e("graphics: Graphics initialization sequence failed");
-		destroy(gr);
-
-		return false;
-
-	}
-
-	gr_shader_load("shaders/triangle.a");
-
-	log_i("graphics: Graphics initialization sequence complete");
-
-	return true;
-
-}
-
-
-
-void gr_submit(graphics *gr)
-{
 }
 
 
