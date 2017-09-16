@@ -9,7 +9,7 @@ cc = clang
 dc = ldc2
 ld = ldc2
 
-cflags  = -O0 -g -Wno-initializer-overrides -Werror=implicit-function-declaration -Werror=incompatible-pointer-types
+cflags  = -O0 -g -MMD -MP -Wno-initializer-overrides -Werror=implicit-function-declaration -Werror=incompatible-pointer-types -Werror=int-conversion -Werror=format
 dflags  = -O0 -g
 ldflags =
 libs    =
@@ -62,4 +62,7 @@ $(objs_c): build/obj/%.o: source/%.c
 
 $(objs_d): build/obj/%.o: source/%.d
 	$(dc) $(dflags) -c $< -of=$@
+
+
+-include $(obj_c:.o=%.d)
 

@@ -44,7 +44,7 @@ include $(wildcard engine/build_make/*.rules)
 include $(wildcard engine/arch_$(arch)/platform.rules)
 
 
-world: build autogen platform-pre platform-build platform-pack platform-post
+world: build autogen data platform-pre platform-build platform-pack platform-post
 
 build:
 	mkdir -p build/
@@ -54,10 +54,10 @@ autogen: $(autosrc)
 clean: platform-clean
 
 purge: clean clean-data clean-docs
-	rm config.rules
+	rm -rf build/
 
 armageddon:
-	rm -rf build/
+	rm config.rules
 
 tarball: armageddon
 	(cd .. && tar Jcvf `date +hades-%y%m%d.%H%M.tar.xz` hades/)
