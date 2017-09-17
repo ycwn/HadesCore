@@ -14,6 +14,7 @@
 #include "gr/vertexformat.h"
 #include "gr/shader.h"
 #include "gr/vertexbuffer.h"
+#include "gr/uniformbuffer.h"
 #include "gr/command.h"
 #include "gr/commandqueue.h"
 

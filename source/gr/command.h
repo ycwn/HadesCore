@@ -10,7 +10,6 @@ enum {
 	GR_COMMAND_STATE_RENDERING
 };
 
-typedef void gr_uniformbuffer;
 typedef void gr_texturearray;
 typedef int  mat4;
 

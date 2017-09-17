@@ -1,5 +1,4 @@
 
-implement basic uniform buffers
 implement DDS support
 implement textures
 implement attachments

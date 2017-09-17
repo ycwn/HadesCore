@@ -15,6 +15,7 @@
 #include "gr/rendertarget.h"
 #include "gr/shader.h"
 #include "gr/vertexbuffer.h"
+#include "gr/uniformbuffer.h"
 #include "gr/command.h"
 #include "gr/commandqueue.h"
 
@@ -357,11 +358,11 @@ void gr_submit()
 	gr_commandqueue_consume();
 	gr_framebuffer_select();
 
-	VkCommandBuffer  curr_cmd    = gfx.vk.command_buffer[gfx.vk.swapchain_curr];
-	gr_rendertarget *curr_target = NULL;
-	gr_shader       *curr_shader = NULL;
-	gr_vertexbuffer *curr_vbo    = NULL;
-	//ubo             *curr_ubo    = NULL;
+	VkCommandBuffer   curr_cmd    = gfx.vk.command_buffer[gfx.vk.swapchain_curr];
+	gr_rendertarget  *curr_target = NULL;
+	gr_shader        *curr_shader = NULL;
+	gr_vertexbuffer  *curr_vbo    = NULL;
+	gr_uniformbuffer *curr_ubo    = NULL;
 	//core::surface   *curr_tex    = NULL;
 
 	const VkDeviceSize       zero = 0;
@@ -405,7 +406,7 @@ void gr_submit()
 
 			curr_shader = cmd->shader;
 			curr_vbo    = NULL;
-//			curr_ubo    = NULL;
+			curr_ubo    = NULL;
 //			curr_tex    = NULL;
 
 			vkCmdBindPipeline(curr_cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, curr_shader->pipeline);
@@ -424,25 +425,25 @@ void gr_submit()
 
 		}
 
-/*		if (curr_ubo != cmd->u || curr_tex != cmd->t) {
+		if (curr_ubo != cmd->uniforms/*|| curr_tex != cmd->t*/) {
 
-			curr_ubo = cmd->u;
-			curr_tex = cmd->t;
+			curr_ubo = cmd->uniforms;
+//			curr_tex = cmd->t;
 
 			const VkDescriptorSet descriptors[]={
-				curr_ubo->get_descriptor(),
-				curr_tex->get_descriptor()
+				curr_ubo->descriptor
+//				curr_tex->get_descriptor()
 			};
 
 			vkCmdBindDescriptorSets(
 				curr_cmd,
 				VK_PIPELINE_BIND_POINT_GRAPHICS,
-				curr_shader->get_layout(),
+				gfx.vk.pipeline_layout,
 				0, countof(descriptors), &descriptors[0],
 				0, NULL);
 
 		}
-*/
+
 		if (curr_vbo->index.buffer != NULL)
 			vkCmdDrawIndexed(curr_cmd, cmd->count, 1, 0, 0, 0);
 
