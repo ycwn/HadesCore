@@ -14,6 +14,7 @@
 #include "gr/framebuffer.h"
 #include "gr/rendertarget.h"
 #include "gr/shader.h"
+#include "gr/vertexbuffer.h"
 #include "gr/command.h"
 #include "gr/commandqueue.h"
 
@@ -214,6 +215,7 @@ graphics *gr_create()
 	gr_shader_create(&gfx);
 	gr_command_create();
 	gr_commandqueue_create();
+	gr_vertexbuffer_create(&gfx);
 
 	return &gfx;
 
@@ -227,6 +229,7 @@ void gr_destroy()
 	if (!SDL_WasInit(SDL_INIT_VIDEO))
 		return;
 
+	gr_vertexbuffer_destroy();
 	gr_commandqueue_destroy();
 	gr_command_destroy();
 	gr_shader_destroy();
@@ -284,7 +287,8 @@ bool gr_request_device_extension(const char *ext)
 
 }
 
-static gr_command triangle;
+static gr_command      triangle;
+static gr_vertexbuffer vbo;
 
 bool gr_set_video()
 {
@@ -315,8 +319,20 @@ bool gr_set_video()
 
 	}
 
+	static u32 verts[] = { //RG16SN R11G11B10
+ 		0xc0000000, 0x78000000,  // XY:  0.0, -0.5; RGB: 0.0, 0.0, 1.0
+		0x3fff3fff, 0x001f0000,  // XY:  0.5,  0.5; RGB: 0.0, 1.0, 0.0
+		0x3fffc000, 0x000003e0   // XY: -0.5,  0.5; RGB: 1.0, 0.0, 0.0
+
+	};
+
 	gr_command_init(&triangle, 1);
+
+	gr_vertexbuffer_init(&vbo);
+	gr_vertexbuffer_commit_vertices(&vbo, verts, sizeof(verts));
+
 	triangle.shader = gr_shader_load("shaders/triangle.a");
+	triangle.vertices = &vbo;
 	triangle.count  = 3;
 
 	log_i("graphics: Graphics initialization sequence complete");
@@ -344,10 +360,11 @@ void gr_submit()
 	VkCommandBuffer  curr_cmd    = gfx.vk.command_buffer[gfx.vk.swapchain_curr];
 	gr_rendertarget *curr_target = NULL;
 	gr_shader       *curr_shader = NULL;
-	//vbo             *curr_vbo    = NULL;
+	gr_vertexbuffer *curr_vbo    = NULL;
 	//ubo             *curr_ubo    = NULL;
 	//core::surface   *curr_tex    = NULL;
 
+	const VkDeviceSize       zero = 0;
 	VkCommandBufferBeginInfo cbbi;
 
 	cbbi.sType            = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -387,34 +404,26 @@ void gr_submit()
 		if (curr_shader != cmd->shader) {
 
 			curr_shader = cmd->shader;
-//			curr_vbo    = NULL;
+			curr_vbo    = NULL;
 //			curr_ubo    = NULL;
 //			curr_tex    = NULL;
 
 			vkCmdBindPipeline(curr_cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, curr_shader->pipeline);
 
 		}
-/*
-		if (curr_vbo != cmd->v) {
 
-			curr_vbo = cmd->v;
+		if (curr_vbo != cmd->vertices) {
 
-			if (curr_vbo->get_vertex_buffer() != NULL)
-				vkCmdBindVertexBuffers(
-					curr_cmd,
-					0, 1,
-					&(const VkBuffer){ curr_vbo->get_vertex_buffer() },
-					&(const VkDeviceSize){ 0 });
+			curr_vbo = cmd->vertices;
 
-			if (curr_vbo->get_index_buffer() != NULL)
-				vkCmdBindIndexBuffer(
-					curr_cmd,
-					curr_vbo->get_index_buffer(),
-					0,
-					VK_INDEX_TYPE_UINT16);
+			if (curr_vbo->vertex.buffer != NULL)
+				vkCmdBindVertexBuffers(curr_cmd, 0, 1, &curr_vbo->vertex.buffer, &zero);
+
+			if (curr_vbo->index.buffer != NULL)
+				vkCmdBindIndexBuffer(curr_cmd, curr_vbo->index.buffer, 0, VK_INDEX_TYPE_UINT16);
 
 		}
-*/
+
 /*		if (curr_ubo != cmd->u || curr_tex != cmd->t) {
 
 			curr_ubo = cmd->u;
@@ -433,11 +442,11 @@ void gr_submit()
 				0, NULL);
 
 		}
-
-		if (curr_vbo->has_indices())
+*/
+		if (curr_vbo->index.buffer != NULL)
 			vkCmdDrawIndexed(curr_cmd, cmd->count, 1, 0, 0, 0);
 
-		else*/
+		else
 			vkCmdDraw(curr_cmd, cmd->count, 1, 0, 0);
 
 	}

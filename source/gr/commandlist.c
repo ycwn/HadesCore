@@ -15,12 +15,13 @@
 #include "gr/rendertarget.h"
 #include "gr/vertexformat.h"
 #include "gr/shader.h"
+#include "gr/vertexbuffer.h"
 #include "gr/command.h"
 #include "gr/commandqueue.h"
 #include "gr/commandlist.h"
 
 
-//static gr_vertexbuffer  guard_vertices;
+static gr_vertexbuffer  guard_vertices = { 0 };
 //static gr_uniformbuffer guard_uniforms;
 //static gr_texturearray  guard_textures;
 
@@ -31,7 +32,7 @@ void gr_commandlist_init(gr_commandlist *cmdl)
 
 	cmdl->modelview = -1;//mat4::Identity(); //FIXME: No vector math!
 
-	cmdl->vertices = NULL;//&guard_vertices; //FIXME: No vertex buffers!
+	cmdl->vertices = &guard_vertices;
 	cmdl->uniforms = NULL;//&guard_uniforms; //FIXME: No uniform buffers!
 	cmdl->textures = NULL;//&guard_textures; //FIXME: No textures!
 
@@ -100,10 +101,10 @@ void gr_commandlist_clear(gr_commandlist *cmdl)
 void gr_commandlist_update(gr_commandlist *cmdl)
 {
 
-/*	if (cmdl->vertices == NULL)
+	if (cmdl->vertices == NULL)
 		cmdl->vertices = &guard_vertices;
 
-	if (cmdl->uniforms == NULL)
+/*	if (cmdl->uniforms == NULL)
 		cmdl->uniforms = &guard_uniforms;
 
 	if (cmdl->textures == NULL)

@@ -13,6 +13,7 @@
 #include "gr/rendertarget.h"
 #include "gr/vertexformat.h"
 #include "gr/shader.h"
+#include "gr/vertexbuffer.h"
 #include "gr/command.h"
 #include "gr/commandqueue.h"
 
