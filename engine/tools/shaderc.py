@@ -833,7 +833,7 @@ def shader_preprocess(shader, source, includes):
 			if directive == K_DEPTH:     process_depth(    token, state, count)
 			if directive == K_INCLUDE:   process_include(  token, state, count)
 			if directive == K_PRIMITIVE: process_primitive(token, state, count)
-			if directive == K_RASTER:    process_render(   token, state, count)
+			if directive == K_RASTER:    process_raster(   token, state, count)
 			if directive == K_RENDER:    process_render(   token, state, count)
 			if directive == K_SECTION:   process_section(  token, state, count)
 			if directive == K_SHADER:    process_shader(   token, state, count)
