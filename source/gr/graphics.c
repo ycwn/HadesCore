@@ -148,17 +148,18 @@ static const char *validation_extensions[]={
 };
 
 
-static inline bool fail_msg(const char *msg) { log_d("%s", msg); return false; }
+static graphics gfx = { 0 };
 
-static void reset(graphics *gr);
-static void destroy(graphics *gr);
-static bool init_vulkan(graphics *gr);
-static bool init_device(graphics *gr);
-static bool init_swapchain(graphics *gr);
-static bool init_pipeline(graphics *gr);
-static bool init_commandpool(graphics *gr);
-static bool init_synchronization(graphics *gr);
-static bool init_descriptors(graphics *gr);
+
+static void reset();
+static void destroy();
+static bool init_vulkan();
+static bool init_device();
+static bool init_swapchain();
+static bool init_pipeline();
+static bool init_commandpool();
+static bool init_synchronization();
+static bool init_descriptors();
 
 static VKAPI_ATTR VkBool32 VKAPI_CALL debug(
 		VkDebugReportFlagsEXT      flags,
@@ -171,10 +172,18 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debug(
 		void                       *ptr);
 
 
+static inline bool fail_msg(const char *msg) {
+	log_d("%s", msg);
+	return false;
+}
+
 
 
 graphics *gr_create()
 {
+
+	if (SDL_WasInit(SDL_INIT_VIDEO))
+		return NULL;
 
 	if (SDL_InitSubSystem(SDL_INIT_VIDEO) < 0)
 		return NULL;
@@ -184,40 +193,38 @@ graphics *gr_create()
 	if (SDL_Vulkan_LoadLibrary(NULL) < 0)
 		return NULL;
 
-	graphics *gr = malloc(sizeof(graphics));
+	gfx.var.screen_width      = var_new("gr.screen.width",   "1024");
+	gfx.var.screen_height     = var_new("gr.screen.height",   "576");
+	gfx.var.screen_fullscreen = var_new("gr.screen.full",       "0");
+	gfx.var.vsync_enable      = var_new("gr.vsync.enable",      "1");
+	gfx.var.vsync_adaptive    = var_new("gr.vsync.adaptive",    "1");
+	gfx.var.triple_buffer     = var_new("gr.tribuffer",         "0");
+	gfx.var.validate          = var_new("gr.validate",          "0");
 
-	gr->var.screen_width      = var_new("gr.screen.width",   "1024");
-	gr->var.screen_height     = var_new("gr.screen.height",   "576");
-	gr->var.screen_fullscreen = var_new("gr.screen.full",       "0");
-	gr->var.vsync_enable      = var_new("gr.vsync.enable",      "1");
-	gr->var.vsync_adaptive    = var_new("gr.vsync.adaptive",    "1");
-	gr->var.triple_buffer     = var_new("gr.tribuffer",         "0");
-	gr->var.validate          = var_new("gr.validate",          "0");
+	gfx.ext.instance_num = 0;
+	gfx.ext.device_num   = 0;
 
-	gr->ext.instance_num = 0;
-	gr->ext.device_num   = 0;
+	mzero(gfx.ext.instance);
+	mzero(gfx.ext.device);
 
-	mzero(gr->ext.instance);
-	mzero(gr->ext.device);
+	reset();
 
-	reset(gr);
-
-	gr_rendertarget_create(gr);
-	gr_framebuffer_create(gr);
-	gr_shader_create(gr);
+	gr_rendertarget_create(&gfx);
+	gr_framebuffer_create(&gfx);
+	gr_shader_create(&gfx);
 	gr_command_create();
 	gr_commandqueue_create();
 
-	return gr;
+	return &gfx;
 
 }
 
 
 
-void gr_destroy(graphics *gr)
+void gr_destroy()
 {
 
-	if (gr == NULL)
+	if (!SDL_WasInit(SDL_INIT_VIDEO))
 		return;
 
 	gr_commandqueue_destroy();
@@ -226,15 +233,15 @@ void gr_destroy(graphics *gr)
 	gr_framebuffer_destroy();
 	gr_rendertarget_destroy();
 
-	destroy(gr);
+	destroy();
 
-	var_del(gr->var.screen_width);
-	var_del(gr->var.screen_height);
-	var_del(gr->var.screen_fullscreen);
-	var_del(gr->var.vsync_enable);
-	var_del(gr->var.vsync_adaptive);
-	var_del(gr->var.triple_buffer);
-	var_del(gr->var.validate);
+	var_del(gfx.var.screen_width);
+	var_del(gfx.var.screen_height);
+	var_del(gfx.var.screen_fullscreen);
+	var_del(gfx.var.vsync_enable);
+	var_del(gfx.var.vsync_adaptive);
+	var_del(gfx.var.triple_buffer);
+	var_del(gfx.var.validate);
 
 	SDL_Vulkan_UnloadLibrary();
 	SDL_QuitSubSystem(SDL_INIT_VIDEO);
@@ -243,17 +250,17 @@ void gr_destroy(graphics *gr)
 
 
 
-bool gr_request_instance_extension(graphics *gr, const char *ext)
+bool gr_request_instance_extension(const char *ext)
 {
 
-	for (int n=0; n < gr->ext.instance_num; n++)
-		if (!strcmp(ext, gr->ext.instance[n]))
+	for (int n=0; n < gfx.ext.instance_num; n++)
+		if (!strcmp(ext, gfx.ext.instance[n]))
 			return true;
 
-	if (gr->ext.instance_num >= GR_INSTANCE_EXT_MAX)
+	if (gfx.ext.instance_num >= GR_INSTANCE_EXT_MAX)
 		return false;
 
-	gr->ext.instance[gr->ext.instance_num++] = ext;
+	gfx.ext.instance[gfx.ext.instance_num++] = ext;
 
 	return true;
 
@@ -261,17 +268,17 @@ bool gr_request_instance_extension(graphics *gr, const char *ext)
 
 
 
-bool gr_request_device_extension(graphics *gr, const char *ext)
+bool gr_request_device_extension(const char *ext)
 {
 
-	for (int n=0; n < gr->ext.device_num; n++)
-		if (!strcmp(ext, gr->ext.device[n]))
+	for (int n=0; n < gfx.ext.device_num; n++)
+		if (!strcmp(ext, gfx.ext.device[n]))
 			return true;
 
-	if (gr->ext.device_num >= GR_DEVICE_EXT_MAX)
+	if (gfx.ext.device_num >= GR_DEVICE_EXT_MAX)
 		return false;
 
-	gr->ext.device[gr->ext.device_num++] = ext;
+	gfx.ext.device[gfx.ext.device_num++] = ext;
 
 	return true;
 
@@ -279,30 +286,30 @@ bool gr_request_device_extension(graphics *gr, const char *ext)
 
 static gr_command triangle;
 
-bool gr_set_video(graphics *gr)
+bool gr_set_video()
 {
 
-	destroy(gr);
+	destroy();
 
 	uint flags = SDL_WINDOW_VULKAN;
 
-	if (gr->var.screen_fullscreen->integer)
+	if (gfx.var.screen_fullscreen->integer)
 		flags |= SDL_WINDOW_FULLSCREEN;
 
-	gr->window = SDL_CreateWindow("Hades Core",
+	gfx.window = SDL_CreateWindow("Hades Core",
 		SDL_WINDOWPOS_CENTERED,        SDL_WINDOWPOS_CENTERED,
-		gr->var.screen_width->integer, gr->var.screen_height->integer, flags);
+		gfx.var.screen_width->integer, gfx.var.screen_height->integer, flags);
 
-	watch("%p", gr->window);
+	watch("%p", gfx.window);
 
-	if (gr->window == NULL ||
-		!init_vulkan(gr)      || !init_device(gr)          || !init_swapchain(gr)   ||
-		!init_commandpool(gr) || !init_synchronization(gr) || !init_descriptors(gr) ||
+	if (gfx.window == NULL ||
+		!init_vulkan()      || !init_device()          || !init_swapchain()   ||
+		!init_commandpool() || !init_synchronization() || !init_descriptors() ||
 
 		!gr_framebuffer_init()) {
 
 		log_e("graphics: Graphics initialization sequence failed");
-		destroy(gr);
+		destroy();
 
 		return false;
 
@@ -320,13 +327,13 @@ bool gr_set_video(graphics *gr)
 
 
 
-void gr_submit(graphics *gr)
+void gr_submit()
 {
 
 	vkAcquireNextImageKHR(
-		gr->vk.gpu,
-		gr->vk.swapchain, 1000000000,
-		gr->vk.signal_image_ready, NULL, (uint*)&gr->vk.swapchain_curr);
+		gfx.vk.gpu,
+		gfx.vk.swapchain, 1000000000,
+		gfx.vk.signal_image_ready, NULL, (uint*)&gfx.vk.swapchain_curr);
 
 	if (triangle.shader != NULL)
 		gr_commandqueue_enqueue(&triangle, 1);
@@ -334,7 +341,7 @@ void gr_submit(graphics *gr)
 	gr_commandqueue_consume();
 	gr_framebuffer_select();
 
-	VkCommandBuffer  curr_cmd    = gr->vk.command_buffer[gr->vk.swapchain_curr];
+	VkCommandBuffer  curr_cmd    = gfx.vk.command_buffer[gfx.vk.swapchain_curr];
 	gr_rendertarget *curr_target = NULL;
 	gr_shader       *curr_shader = NULL;
 	//vbo             *curr_vbo    = NULL;
@@ -446,148 +453,394 @@ void gr_submit(graphics *gr)
 
 	si.sType                = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 	si.waitSemaphoreCount   = 1;
-	si.pWaitSemaphores      = &gr->vk.signal_image_ready;
+	si.pWaitSemaphores      = &gfx.vk.signal_image_ready;
 	si.pWaitDstStageMask    = &(const VkPipelineStageFlags){ VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
 	si.commandBufferCount   = 1;
-	si.pCommandBuffers      = &gr->vk.command_buffer[gr->vk.swapchain_curr];
+	si.pCommandBuffers      = &gfx.vk.command_buffer[gfx.vk.swapchain_curr];
 	si.signalSemaphoreCount = 1;
-	si.pSignalSemaphores    = &gr->vk.signal_render_complete;
+	si.pSignalSemaphores    = &gfx.vk.signal_render_complete;
 
-	vkQueueSubmit(gr->vk.graphics_queue, 1, &si, NULL);
+	vkQueueSubmit(gfx.vk.graphics_queue, 1, &si, NULL);
 
 	pi.sType              = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
 	pi.waitSemaphoreCount = 1;
-	pi.pWaitSemaphores    = &gr->vk.signal_render_complete;
+	pi.pWaitSemaphores    = &gfx.vk.signal_render_complete;
 	pi.swapchainCount     = 1;
-	pi.pSwapchains        = &gr->vk.swapchain;
-	pi.pImageIndices      = (uint*)&gr->vk.swapchain_curr;
+	pi.pSwapchains        = &gfx.vk.swapchain;
+	pi.pImageIndices      = (uint*)&gfx.vk.swapchain_curr;
 	pi.pResults           = NULL;
 
-	vkQueuePresentKHR(gr->vk.presentation_queue, &pi);
+	vkQueuePresentKHR(gfx.vk.presentation_queue, &pi);
 
 }
 
 
 
-void reset(graphics *gr)
+int gr_get_memory_type(uint mask, uint props)
 {
 
-	gr->window = NULL;
+	for (int n=0; n < gfx.vk.memory_properties.memoryTypeCount; n++)
+		if ((mask & (1 << n)) && (gfx.vk.memory_properties.memoryTypes[n].propertyFlags & props) == props)
+			return n;
 
-	gr->vk.instance = NULL;
-	gr->vk.device   = NULL;
-	gr->vk.gpu      = NULL;
-
- 	memset(&gr->vk.memory_properties, 0, sizeof(gr->vk.memory_properties));
-
-	gr->vk.graphics_queue_index = -1;
-	gr->vk.graphics_queue_count =  0;
-	gr->vk.graphics_queue       = NULL;
-
-	gr->vk.compute_queue_index = -1;
-	gr->vk.compute_queue_count =  0;
-	gr->vk.compute_queue       = NULL;
-
-	gr->vk.transfer_queue_index = -1;
-	gr->vk.transfer_queue_count =  0;
-	gr->vk.transfer_queue       = NULL;
-
-	gr->vk.presentation_queue_index = -1;
-	gr->vk.presentation_queue_count =  0;
-	gr->vk.presentation_queue       = NULL;
-
-	gr->vk.surface = NULL;
-
-	gr->vk.swapchain_width  = 0;
-	gr->vk.swapchain_height = 0;
-	gr->vk.swapchain_length = 0;
-	gr->vk.swapchain_curr   = -1;
-	gr->vk.swapchain_format = VK_FORMAT_UNDEFINED;
-	gr->vk.swapchain        = NULL;
-
-	gr->vk.command_pool = NULL;
-
-	mzero(gr->vk.command_buffer);
-
-	gr->vk.transfer_pool   = NULL;
-	gr->vk.transfer_buffer = NULL;
-
-	gr->vk.signal_image_ready     = NULL;
-	gr->vk.signal_render_complete = NULL;
-
-	gr->vk.descriptor_uniform_pool = NULL;
-	gr->vk.descriptor_texture_pool = NULL;
-
-	gr->vk.descriptor_uniform_layout = NULL;
-	gr->vk.descriptor_texture_layout = NULL;
-
-	gr->vk.pipeline_layout = NULL;
+	return -1;
 
 }
 
 
 
-void destroy(graphics *gr)
+bool gr_create_buffer(VkBuffer *buf, VkDeviceMemory *mem, size_t size, uint usage, uint props)
 {
 
-	if (gr->vk.pipeline_layout != NULL)
-		vkDestroyPipelineLayout(gr->vk.gpu, gr->vk.pipeline_layout, NULL);
+	*buf = NULL;
+	*mem = NULL;
 
-	if (gr->vk.descriptor_uniform_layout != NULL)
-		vkDestroyDescriptorSetLayout(gr->vk.gpu, gr->vk.descriptor_uniform_layout, NULL);
+        VkBufferCreateInfo   bci = { 0 };
+	VkMemoryAllocateInfo mai = { 0 };
+	VkMemoryRequirements mr;
 
-	if (gr->vk.descriptor_texture_layout != NULL)
-		vkDestroyDescriptorSetLayout(gr->vk.gpu, gr->vk.descriptor_texture_layout, NULL);
+	bci.sType       = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+	bci.size        = size;
+	bci.usage       = usage;
+	bci.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-	if (gr->vk.descriptor_uniform_pool != NULL)
-		vkDestroyDescriptorPool(gr->vk.gpu, gr->vk.descriptor_uniform_pool, NULL);
+	if (vkCreateBuffer(gfx.vk.gpu, &bci, NULL, buf) != VK_SUCCESS)
+		goto fail;
 
-	if (gr->vk.descriptor_texture_pool != NULL)
-		vkDestroyDescriptorPool(gr->vk.gpu, gr->vk.descriptor_texture_pool, NULL);
+	vkGetBufferMemoryRequirements(gfx.vk.gpu, *buf, &mr);
 
-	if (gr->vk.signal_render_complete != NULL)
-		vkDestroySemaphore(gr->vk.gpu, gr->vk.signal_render_complete, NULL);
+	mai.sType           = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+	mai.allocationSize  = mr.size;
+	mai.memoryTypeIndex = gr_get_memory_type(mr.memoryTypeBits, props);
 
-	if (gr->vk.signal_image_ready != NULL)
-		vkDestroySemaphore(gr->vk.gpu, gr->vk.signal_image_ready, NULL);
+        if (vkAllocateMemory(gfx.vk.gpu, &mai, NULL, mem) != VK_SUCCESS)
+		goto fail;
 
-	if (gr->vk.command_pool != NULL)
-		vkDestroyCommandPool(gr->vk.gpu, gr->vk.command_pool, NULL);
+        vkBindBufferMemory(gfx.vk.gpu, *buf, *mem, 0);
+	return true;
 
-	if (gr->vk.transfer_pool != NULL)
-		vkDestroyCommandPool(gr->vk.gpu, gr->vk.transfer_pool, NULL);
+fail:
+	if (*mem != NULL)
+		vkFreeMemory(gfx.vk.gpu, *mem, NULL);
 
-	if (gr->vk.swapchain != NULL) {
+	if (*buf != NULL)
+		vkDestroyBuffer(gfx.vk.gpu, *buf, NULL);
 
-		for (int n=0; n < gr->vk.swapchain_length; n++)
-			vkDestroyImageView(gr->vk.gpu, gr->vk.swapchain_views[n], NULL);
+	*buf = NULL;
+	*mem = NULL;
 
-		vkDestroySwapchainKHR(gr->vk.gpu, gr->vk.swapchain, NULL);
+	return false;
+
+}
+
+
+
+bool gr_create_image(
+		VkImage        *img,
+		VkDeviceMemory *mem,
+		VkFormat        format,
+		uint            width,   uint height, uint depth,
+		uint            mipmaps, uint layers, uint tiling, uint usage, uint props)
+{
+
+	*img = NULL;
+	*mem = NULL;
+
+	VkImageCreateInfo    ici = { 0 };
+	VkMemoryAllocateInfo mai = { 0 };
+	VkMemoryRequirements mr;
+
+	ici.sType         = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+	ici.imageType     = VK_IMAGE_TYPE_2D;
+	ici.extent.width  = width;
+	ici.extent.height = height;
+	ici.extent.depth  = depth;
+	ici.mipLevels     = mipmaps;
+	ici.arrayLayers   = layers;
+	ici.format        = format;
+	ici.tiling        = tiling;
+	ici.initialLayout = VK_IMAGE_LAYOUT_PREINITIALIZED;
+	ici.usage         = usage;
+	ici.samples       = VK_SAMPLE_COUNT_1_BIT;
+	ici.sharingMode   = VK_SHARING_MODE_EXCLUSIVE;
+
+	if (vkCreateImage(gfx.vk.gpu, &ici, NULL, img) != VK_SUCCESS)
+		goto fail;
+
+	vkGetImageMemoryRequirements(gfx.vk.gpu, *img, &mr);
+
+	mai.sType           = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+	mai.allocationSize  = mr.size;
+	mai.memoryTypeIndex = gr_get_memory_type(mr.memoryTypeBits, props);
+
+	if (vkAllocateMemory(gfx.vk.gpu, &mai, NULL, mem) != VK_SUCCESS)
+		goto fail;
+
+	vkBindImageMemory(gfx.vk.gpu, *img, *mem, 0);
+	return true;
+
+fail:
+	if (*mem != NULL)
+		vkFreeMemory(gfx.vk.gpu, *mem, NULL);
+
+	if (*img != NULL)
+		vkDestroyImage(gfx.vk.gpu, *img, NULL);
+
+	*img = NULL;
+	*mem = NULL;
+
+	return false;
+
+}
+
+
+
+bool gr_create_image_view(VkImageView *view, VkImage img, VkFormat fmt)
+{
+
+	VkImageViewCreateInfo ivci = { 0 };
+
+	ivci.sType                           = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+	ivci.image                           = img;
+	ivci.viewType                        = VK_IMAGE_VIEW_TYPE_2D;
+	ivci.format                          = fmt;
+	ivci.subresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+	ivci.subresourceRange.baseMipLevel   = 0;
+	ivci.subresourceRange.levelCount     = 1;
+	ivci.subresourceRange.baseArrayLayer = 0;
+	ivci.subresourceRange.layerCount     = 1;
+
+	return vkCreateImageView(gfx.vk.gpu, &ivci, NULL, view) == VK_SUCCESS;
+
+}
+
+
+
+void gr_transfer_begin()
+{
+
+	VkCommandBufferBeginInfo cbbi = { 0 };
+
+	cbbi.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+	cbbi.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+	vkBeginCommandBuffer(gfx.vk.transfer_buffer, &cbbi);
+
+}
+
+
+
+void gr_transfer_end()
+{
+
+	vkEndCommandBuffer(gfx.vk.transfer_buffer);
+
+	VkSubmitInfo si = { 0 };
+
+	si.sType              = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+	si.commandBufferCount = 1;
+	si.pCommandBuffers    = &gfx.vk.transfer_buffer;
+
+	vkQueueSubmit(  gfx.vk.transfer_queue, 1, &si, NULL);
+	vkQueueWaitIdle(gfx.vk.transfer_queue);
+
+}
+
+
+
+void gr_copy_buffer_to_buffer(VkBuffer src, VkBuffer dst, size_t len)
+{
+
+	gr_transfer_begin();
+
+	vkCmdCopyBuffer(gfx.vk.transfer_buffer, src, dst, 1, &(VkBufferCopy){ 0, 0, len });
+
+	gr_transfer_end();
+
+}
+
+
+
+void gr_copy_buffer_to_image(VkBuffer src, VkImage dst, uint width, uint height, uint depth)
+{
+
+	gr_transfer_begin();
+
+	VkBufferImageCopy bic = { 0 };
+
+	bic.bufferOffset      = 0;
+	bic.bufferRowLength   = 0;
+	bic.bufferImageHeight = 0;
+	bic.imageSubresource.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+	bic.imageSubresource.mipLevel       = 0;
+	bic.imageSubresource.baseArrayLayer = 0;
+	bic.imageSubresource.layerCount     = 1;
+	bic.imageOffset.x      = 0;
+	bic.imageOffset.y      = 0;
+	bic.imageOffset.z      = 0;
+	bic.imageExtent.width  = width;
+	bic.imageExtent.height = height;
+	bic.imageExtent.depth  = depth;
+
+	vkCmdCopyBufferToImage(gfx.vk.transfer_buffer, src, dst,
+		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &bic);
+
+	gr_transfer_end();
+
+}
+
+
+
+void gr_transition_layout(VkImage img, VkImageLayout layout, VkAccessFlagBits src, VkAccessFlagBits dst)
+{
+
+	gr_transfer_begin();
+
+	VkImageMemoryBarrier imb = { 0 };
+
+	imb.sType                           = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+	imb.oldLayout                       = VK_IMAGE_LAYOUT_UNDEFINED;
+	imb.newLayout                       = layout;
+	imb.srcQueueFamilyIndex             = VK_QUEUE_FAMILY_IGNORED;
+	imb.dstQueueFamilyIndex             = VK_QUEUE_FAMILY_IGNORED;
+	imb.image                           = img;
+	imb.subresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+	imb.subresourceRange.baseMipLevel   = 0;
+	imb.subresourceRange.levelCount     = 1;
+	imb.subresourceRange.baseArrayLayer = 0;
+	imb.subresourceRange.layerCount     = 1;
+	imb.srcAccessMask                   = src;
+	imb.dstAccessMask                   = dst;
+
+	vkCmdPipelineBarrier(gfx.vk.transfer_buffer,
+		VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+		0, 0, NULL, 0, NULL, 1, &imb);
+
+	gr_transfer_end();
+
+}
+
+
+
+void reset()
+{
+
+	gfx.window = NULL;
+
+	gfx.vk.instance = NULL;
+	gfx.vk.device   = NULL;
+	gfx.vk.gpu      = NULL;
+
+ 	memset(&gfx.vk.memory_properties, 0, sizeof(gfx.vk.memory_properties));
+
+	gfx.vk.graphics_queue_index = -1;
+	gfx.vk.graphics_queue_count =  0;
+	gfx.vk.graphics_queue       = NULL;
+
+	gfx.vk.compute_queue_index = -1;
+	gfx.vk.compute_queue_count =  0;
+	gfx.vk.compute_queue       = NULL;
+
+	gfx.vk.transfer_queue_index = -1;
+	gfx.vk.transfer_queue_count =  0;
+	gfx.vk.transfer_queue       = NULL;
+
+	gfx.vk.presentation_queue_index = -1;
+	gfx.vk.presentation_queue_count =  0;
+	gfx.vk.presentation_queue       = NULL;
+
+	gfx.vk.surface = NULL;
+
+	gfx.vk.swapchain_width  = 0;
+	gfx.vk.swapchain_height = 0;
+	gfx.vk.swapchain_length = 0;
+	gfx.vk.swapchain_curr   = -1;
+	gfx.vk.swapchain_format = VK_FORMAT_UNDEFINED;
+	gfx.vk.swapchain        = NULL;
+
+	gfx.vk.command_pool = NULL;
+
+	mzero(gfx.vk.command_buffer);
+
+	gfx.vk.transfer_pool   = NULL;
+	gfx.vk.transfer_buffer = NULL;
+
+	gfx.vk.signal_image_ready     = NULL;
+	gfx.vk.signal_render_complete = NULL;
+
+	gfx.vk.descriptor_uniform_pool = NULL;
+	gfx.vk.descriptor_texture_pool = NULL;
+
+	gfx.vk.descriptor_uniform_layout = NULL;
+	gfx.vk.descriptor_texture_layout = NULL;
+
+	gfx.vk.pipeline_layout = NULL;
+
+}
+
+
+
+void destroy()
+{
+
+	if (gfx.vk.pipeline_layout != NULL)
+		vkDestroyPipelineLayout(gfx.vk.gpu, gfx.vk.pipeline_layout, NULL);
+
+	if (gfx.vk.descriptor_uniform_layout != NULL)
+		vkDestroyDescriptorSetLayout(gfx.vk.gpu, gfx.vk.descriptor_uniform_layout, NULL);
+
+	if (gfx.vk.descriptor_texture_layout != NULL)
+		vkDestroyDescriptorSetLayout(gfx.vk.gpu, gfx.vk.descriptor_texture_layout, NULL);
+
+	if (gfx.vk.descriptor_uniform_pool != NULL)
+		vkDestroyDescriptorPool(gfx.vk.gpu, gfx.vk.descriptor_uniform_pool, NULL);
+
+	if (gfx.vk.descriptor_texture_pool != NULL)
+		vkDestroyDescriptorPool(gfx.vk.gpu, gfx.vk.descriptor_texture_pool, NULL);
+
+	if (gfx.vk.signal_render_complete != NULL)
+		vkDestroySemaphore(gfx.vk.gpu, gfx.vk.signal_render_complete, NULL);
+
+	if (gfx.vk.signal_image_ready != NULL)
+		vkDestroySemaphore(gfx.vk.gpu, gfx.vk.signal_image_ready, NULL);
+
+	if (gfx.vk.command_pool != NULL)
+		vkDestroyCommandPool(gfx.vk.gpu, gfx.vk.command_pool, NULL);
+
+	if (gfx.vk.transfer_pool != NULL)
+		vkDestroyCommandPool(gfx.vk.gpu, gfx.vk.transfer_pool, NULL);
+
+	if (gfx.vk.swapchain != NULL) {
+
+		for (int n=0; n < gfx.vk.swapchain_length; n++)
+			vkDestroyImageView(gfx.vk.gpu, gfx.vk.swapchain_views[n], NULL);
+
+		vkDestroySwapchainKHR(gfx.vk.gpu, gfx.vk.swapchain, NULL);
 
 	}
 
-	if (gr->vk.gpu != NULL)
-		vkDestroyDevice(gr->vk.gpu, NULL);
+	if (gfx.vk.gpu != NULL)
+		vkDestroyDevice(gfx.vk.gpu, NULL);
 
-	if (gr->vk.surface != NULL)
-		vkDestroySurfaceKHR(gr->vk.instance, gr->vk.surface, NULL);
+	if (gfx.vk.surface != NULL)
+		vkDestroySurfaceKHR(gfx.vk.instance, gfx.vk.surface, NULL);
 
 //	if (callback != NULL)
 //		vkDestroyDebugReportCallbackEXT(instance, callback, NULL);
 
-	if (gr->vk.instance != NULL)
-		vkDestroyInstance(gr->vk.instance, NULL);
+	if (gfx.vk.instance != NULL)
+		vkDestroyInstance(gfx.vk.instance, NULL);
 
-	if (gr->window != NULL)
-		SDL_DestroyWindow(gr->window);
+	if (gfx.window != NULL)
+		SDL_DestroyWindow(gfx.window);
 
-	reset(gr);
+	reset();
 
 }
 
 
 
-bool init_vulkan(graphics *gr)
+bool init_vulkan()
 {
 
 	vkGetInstanceProcAddr = (PFN_vkGetInstanceProcAddr)SDL_Vulkan_GetVkGetInstanceProcAddr();
@@ -598,17 +851,17 @@ bool init_vulkan(graphics *gr)
 	GR_VKSYM(vkCreateInstance);
 	GR_VKSYM(vkEnumerateInstanceExtensionProperties);
 
-	GR_VKENUM_SDL_EXTENSIONS(sdl_ext, gr->window);
+	GR_VKENUM_SDL_EXTENSIONS(sdl_ext, gfx.window);
 
 	if (sdl_ext_num == 0)
 		return fail_msg("graphics: SDL_Vulkan_GetInstanceExtensions() failed!");
 
 	for (int n=0; n < sdl_ext_num; n++)
-		gr_request_instance_extension(gr, sdl_ext[n]);
+		gr_request_instance_extension(sdl_ext[n]);
 
-	if (gr->var.validate->integer)
+	if (gfx.var.validate->integer)
 		for (int n=0; n < countof(validation_extensions); n++)
-			gr_request_instance_extension(gr, validation_extensions[n]);
+			gr_request_instance_extension(validation_extensions[n]);
 
 	VkApplicationInfo    vkai  = {};
 	VkInstanceCreateInfo vkici = {};
@@ -622,12 +875,12 @@ bool init_vulkan(graphics *gr)
 
 	vkici.sType                   = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
 	vkici.pApplicationInfo        = &vkai;
-	vkici.enabledExtensionCount   = gr->ext.instance_num;
-	vkici.ppEnabledExtensionNames = gr->ext.instance;
-	vkici.enabledLayerCount       = gr->var.validate->integer? countof(validation_layers): 0;
-	vkici.ppEnabledLayerNames     = gr->var.validate->integer? validation_layers: NULL;
+	vkici.enabledExtensionCount   = gfx.ext.instance_num;
+	vkici.ppEnabledExtensionNames = gfx.ext.instance;
+	vkici.enabledLayerCount       = gfx.var.validate->integer? countof(validation_layers): 0;
+	vkici.ppEnabledLayerNames     = gfx.var.validate->integer? validation_layers: NULL;
 
-	if (vkCreateInstance(&vkici, NULL, &gr->vk.instance) != VK_SUCCESS)
+	if (vkCreateInstance(&vkici, NULL, &gfx.vk.instance) != VK_SUCCESS)
 		return fail_msg("graphics: vkCreateInstance() failed!");
 
 	log_i("graphics: Vulkan initialized");
@@ -709,7 +962,7 @@ bool init_vulkan(graphics *gr)
 	GR_VKSYM(vkCreateDebugReportCallbackEXT);
 	GR_VKSYM(vkDestroyDebugReportCallbackEXT);
 
-	if (gr->var.validate->integer) {
+	if (gfx.var.validate->integer) {
 
 		VkDebugReportCallbackCreateInfoEXT vkdrcci = {};
 
@@ -717,12 +970,12 @@ bool init_vulkan(graphics *gr)
 		vkdrcci.flags       = VK_DEBUG_REPORT_ERROR_BIT_EXT | VK_DEBUG_REPORT_WARNING_BIT_EXT;
 		vkdrcci.pfnCallback = debug;
 
-		if (vkCreateDebugReportCallbackEXT(gr->vk.instance, &vkdrcci, NULL, &gr->vk.callback) != VK_SUCCESS)
+		if (vkCreateDebugReportCallbackEXT(gfx.vk.instance, &vkdrcci, NULL, &gfx.vk.callback) != VK_SUCCESS)
 			log_e("graphics: warning: Failed to set up debug callback!");
 
 	}
 
-	if (!SDL_Vulkan_CreateSurface(gr->window, gr->vk.instance, &gr->vk.surface))
+	if (!SDL_Vulkan_CreateSurface(gfx.window, gfx.vk.instance, &gfx.vk.surface))
 		return fail_msg("graphics: SDL_Vulkan_CreateSurface() failed!");
 
 	log_i("graphics: Rendering surface initialized");
@@ -733,7 +986,7 @@ bool init_vulkan(graphics *gr)
 
 
 
-bool init_device(graphics *gr)
+bool init_device()
 {
 
 	static const int device_types[]={
@@ -741,7 +994,7 @@ bool init_device(graphics *gr)
 		VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU
 	};
 
-	GR_VKENUM_DEVICES(devices, gr->vk.instance);
+	GR_VKENUM_DEVICES(devices, gfx.vk.instance);
 
 	if (devices_num < 1) {
 
@@ -750,7 +1003,7 @@ bool init_device(graphics *gr)
 
 	}
 
-	gr->vk.device = NULL;
+	gfx.vk.device = NULL;
 
 	for (int m=0; m < countof(device_types); m++)
 		for (int n=0; n < devices_num; n++) {
@@ -775,7 +1028,7 @@ bool init_device(graphics *gr)
 			for (int k=0; k < queues_num; k++) {
 
 				VkBool32 can_present = false;
-				vkGetPhysicalDeviceSurfaceSupportKHR(dev, k, gr->vk.surface, &can_present);
+				vkGetPhysicalDeviceSurfaceSupportKHR(dev, k, gfx.vk.surface, &can_present);
 
 				if ((queues[k].queueFlags & VK_QUEUE_GRAPHICS_BIT) && (graphics_index < 0 || (queues[graphics_index].queueCount < queues[k].queueCount)))
 					graphics_index = k;
@@ -803,19 +1056,19 @@ bool init_device(graphics *gr)
 			if (!has_swapchain)
 				continue;
 
-			gr->vk.device = dev;
+			gfx.vk.device = dev;
 
-			gr->vk.graphics_queue_index = graphics_index;
-			gr->vk.graphics_queue_count = queues[graphics_index].queueCount;
+			gfx.vk.graphics_queue_index = graphics_index;
+			gfx.vk.graphics_queue_count = queues[graphics_index].queueCount;
 
-			gr->vk.compute_queue_index = compute_index;
-			gr->vk.compute_queue_count = queues[compute_index].queueCount;
+			gfx.vk.compute_queue_index = compute_index;
+			gfx.vk.compute_queue_count = queues[compute_index].queueCount;
 
-			gr->vk.transfer_queue_index = transfer_index;
-			gr->vk.transfer_queue_count = queues[transfer_index].queueCount;
+			gfx.vk.transfer_queue_index = transfer_index;
+			gfx.vk.transfer_queue_count = queues[transfer_index].queueCount;
 
-			gr->vk.presentation_queue_index = presentation_index;
-			gr->vk.presentation_queue_count = queues[presentation_index].queueCount;
+			gfx.vk.presentation_queue_index = presentation_index;
+			gfx.vk.presentation_queue_count = queues[presentation_index].queueCount;
 
 			goto device_found;
 
@@ -825,21 +1078,21 @@ bool init_device(graphics *gr)
 	return false;
 
 device_found:
-	vkGetPhysicalDeviceProperties(gr->vk.device, &gr->vk.device_properties);
-	vkGetPhysicalDeviceFeatures(  gr->vk.device, &gr->vk.device_features);
+	vkGetPhysicalDeviceProperties(gfx.vk.device, &gfx.vk.device_properties);
+	vkGetPhysicalDeviceFeatures(  gfx.vk.device, &gfx.vk.device_features);
 
-	vkGetPhysicalDeviceMemoryProperties(gr->vk.device, &gr->vk.memory_properties);
+	vkGetPhysicalDeviceMemoryProperties(gfx.vk.device, &gfx.vk.memory_properties);
 
 	log_i("graphics: Using device %02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x %s",
-			gr->vk.device_properties.pipelineCacheUUID[0],  gr->vk.device_properties.pipelineCacheUUID[1],
-			gr->vk.device_properties.pipelineCacheUUID[2],  gr->vk.device_properties.pipelineCacheUUID[3],
-			gr->vk.device_properties.pipelineCacheUUID[4],  gr->vk.device_properties.pipelineCacheUUID[5],
-			gr->vk.device_properties.pipelineCacheUUID[6],  gr->vk.device_properties.pipelineCacheUUID[7],
-			gr->vk.device_properties.pipelineCacheUUID[8],  gr->vk.device_properties.pipelineCacheUUID[9],
-			gr->vk.device_properties.pipelineCacheUUID[10], gr->vk.device_properties.pipelineCacheUUID[11],
-			gr->vk.device_properties.pipelineCacheUUID[12], gr->vk.device_properties.pipelineCacheUUID[13],
-			gr->vk.device_properties.pipelineCacheUUID[14], gr->vk.device_properties.pipelineCacheUUID[15],
-			gr->vk.device_properties.deviceName);
+			gfx.vk.device_properties.pipelineCacheUUID[0],  gfx.vk.device_properties.pipelineCacheUUID[1],
+			gfx.vk.device_properties.pipelineCacheUUID[2],  gfx.vk.device_properties.pipelineCacheUUID[3],
+			gfx.vk.device_properties.pipelineCacheUUID[4],  gfx.vk.device_properties.pipelineCacheUUID[5],
+			gfx.vk.device_properties.pipelineCacheUUID[6],  gfx.vk.device_properties.pipelineCacheUUID[7],
+			gfx.vk.device_properties.pipelineCacheUUID[8],  gfx.vk.device_properties.pipelineCacheUUID[9],
+			gfx.vk.device_properties.pipelineCacheUUID[10], gfx.vk.device_properties.pipelineCacheUUID[11],
+			gfx.vk.device_properties.pipelineCacheUUID[12], gfx.vk.device_properties.pipelineCacheUUID[13],
+			gfx.vk.device_properties.pipelineCacheUUID[14], gfx.vk.device_properties.pipelineCacheUUID[15],
+			gfx.vk.device_properties.deviceName);
 
 //
 // Init device
@@ -848,12 +1101,12 @@ device_found:
 	VkDeviceCreateInfo       dci = {};
 
 	dqci[0].sType            = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-	dqci[0].queueFamilyIndex = gr->vk.graphics_queue_index;
+	dqci[0].queueFamilyIndex = gfx.vk.graphics_queue_index;
 	dqci[0].queueCount       = 1;
 	dqci[0].pQueuePriorities = &(const float){ 1.0f };
 
 	dqci[1].sType            = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-	dqci[1].queueFamilyIndex = gr->vk.presentation_queue_index;
+	dqci[1].queueFamilyIndex = gfx.vk.presentation_queue_index;
 	dqci[1].queueCount       = 1;
 	dqci[1].pQueuePriorities = &(const float){ 1.0f };
 
@@ -861,22 +1114,22 @@ device_found:
 	dci.pQueueCreateInfos       = dqci;
 	dci.queueCreateInfoCount    = countof(dqci);
 	dci.pEnabledFeatures        = &pdf;
-	dci.enabledExtensionCount   = gr->ext.device_num;
-	dci.ppEnabledExtensionNames = gr->ext.device;
+	dci.enabledExtensionCount   = gfx.ext.device_num;
+	dci.ppEnabledExtensionNames = gfx.ext.device;
 //	dci.ppEnabledLayerNames     = layer_names;
 //	dci.enabledLayerCount       = sizeof(layer_names) / sizeof(layer_names[0]);
 
-	if (vkCreateDevice(gr->vk.device, &dci, NULL, &gr->vk.gpu) != VK_SUCCESS)
+	if (vkCreateDevice(gfx.vk.device, &dci, NULL, &gfx.vk.gpu) != VK_SUCCESS)
 		return fail_msg("graphics: vkCreateDevice() failed!");
 
-	watch("%d", gr->vk.graphics_queue_index);
-	watch("%d", gr->vk.compute_queue_index);
-	watch("%d", gr->vk.transfer_queue_index);
-	watch("%d", gr->vk.presentation_queue_index);
+	watch("%d", gfx.vk.graphics_queue_index);
+	watch("%d", gfx.vk.compute_queue_index);
+	watch("%d", gfx.vk.transfer_queue_index);
+	watch("%d", gfx.vk.presentation_queue_index);
 
-	vkGetDeviceQueue(gr->vk.gpu, gr->vk.graphics_queue_index,     0, &gr->vk.graphics_queue);
-	vkGetDeviceQueue(gr->vk.gpu, gr->vk.transfer_queue_index,     0, &gr->vk.transfer_queue);
-	vkGetDeviceQueue(gr->vk.gpu, gr->vk.presentation_queue_index, 0, &gr->vk.presentation_queue);
+	vkGetDeviceQueue(gfx.vk.gpu, gfx.vk.graphics_queue_index,     0, &gfx.vk.graphics_queue);
+	vkGetDeviceQueue(gfx.vk.gpu, gfx.vk.transfer_queue_index,     0, &gfx.vk.transfer_queue);
+	vkGetDeviceQueue(gfx.vk.gpu, gfx.vk.presentation_queue_index, 0, &gfx.vk.presentation_queue);
 
 	log_i("graphics: Rendering device ready");
 
@@ -886,7 +1139,7 @@ device_found:
 
 
 
-bool init_swapchain(graphics *gr)
+bool init_swapchain()
 {
 
 	VkSurfaceCapabilitiesKHR caps;
@@ -894,7 +1147,7 @@ bool init_swapchain(graphics *gr)
 	VkPresentModeKHR         mode;
 	VkExtent2D               extent;
 
-	vkGetPhysicalDeviceSurfaceCapabilitiesKHR(gr->vk.device, gr->vk.surface, &caps);
+	vkGetPhysicalDeviceSurfaceCapabilitiesKHR(gfx.vk.device, gfx.vk.surface, &caps);
 
 	format.format     = VK_FORMAT_B8G8R8A8_UNORM;
 	format.colorSpace = VK_COLORSPACE_SRGB_NONLINEAR_KHR;
@@ -904,7 +1157,7 @@ bool init_swapchain(graphics *gr)
 // Here we should go through all formats
 // and find one with highest number of bits that is non-linear
 // That requires pixelformat descriptors which do not yet exist.
-	GR_VKENUM_SURFACE_FORMATS(formats, gr->vk.device, gr->vk.surface);
+	GR_VKENUM_SURFACE_FORMATS(formats, gfx.vk.device, gfx.vk.surface);
 
 	format = formats[0];
 
@@ -917,7 +1170,7 @@ bool init_swapchain(graphics *gr)
 	bool has_immediate = false;
 	bool has_adaptive  = false;
 
-	GR_VKENUM_PRESENT_MODES(modes, gr->vk.device, gr->vk.surface);
+	GR_VKENUM_PRESENT_MODES(modes, gfx.vk.device, gfx.vk.surface);
 
 	for (int n=0; n < modes_num; n++) {
 
@@ -926,29 +1179,29 @@ bool init_swapchain(graphics *gr)
 
 	}
 
-	if (!gr->var.vsync_enable->integer)
+	if (!gfx.var.vsync_enable->integer)
 		mode =  has_immediate? VK_PRESENT_MODE_IMMEDIATE_KHR:
 			has_adaptive?  VK_PRESENT_MODE_FIFO_RELAXED_KHR: VK_PRESENT_MODE_FIFO_KHR;
 
-	else if (gr->var.vsync_adaptive->integer)
+	else if (gfx.var.vsync_adaptive->integer)
 		mode = has_adaptive? VK_PRESENT_MODE_FIFO_RELAXED_KHR: VK_PRESENT_MODE_FIFO_KHR;
 
 	int w, h;
-	SDL_GetWindowSize(gr->window, &w, &h);
+	SDL_GetWindowSize(gfx.window, &w, &h);
 
 	extent.width  = clampu(w, caps.minImageExtent.width,  caps.maxImageExtent.width);
 	extent.height = clampu(h, caps.minImageExtent.height, caps.maxImageExtent.height);
 
-	gr->vk.swapchain_length = gr->var.triple_buffer->integer? 3: 2;
+	gfx.vk.swapchain_length = gfx.var.triple_buffer->integer? 3: 2;
 
-	if (gr->vk.swapchain_length > caps.maxImageCount)
-		gr->vk.swapchain_length = caps.maxImageCount;
+	if (gfx.vk.swapchain_length > caps.maxImageCount)
+		gfx.vk.swapchain_length = caps.maxImageCount;
 
 	VkSwapchainCreateInfoKHR scci = {};
 
 	scci.sType            = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-	scci.surface          = gr->vk.surface;
-	scci.minImageCount    = gr->vk.swapchain_length;
+	scci.surface          = gfx.vk.surface;
+	scci.minImageCount    = gfx.vk.swapchain_length;
 	scci.imageFormat      = format.format;
 	scci.imageColorSpace  = format.colorSpace;
 	scci.imageExtent      = extent;
@@ -956,11 +1209,11 @@ bool init_swapchain(graphics *gr)
 	scci.imageUsage       = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
 	const uint queue_indices[2] = {
-		(uint)gr->vk.graphics_queue_index,
-		(uint)gr->vk.presentation_queue_index
+		(uint)gfx.vk.graphics_queue_index,
+		(uint)gfx.vk.presentation_queue_index
 	};
 
-	if (gr->vk.graphics_queue_index != gr->vk.presentation_queue_index) {
+	if (gfx.vk.graphics_queue_index != gfx.vk.presentation_queue_index) {
 
 		scci.imageSharingMode      = VK_SHARING_MODE_CONCURRENT;
 		scci.queueFamilyIndexCount = 2;
@@ -973,29 +1226,29 @@ bool init_swapchain(graphics *gr)
 	scci.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
 	scci.presentMode    = mode;
 	scci.clipped        = VK_TRUE;
-	scci.oldSwapchain   = gr->vk.swapchain;
+	scci.oldSwapchain   = gfx.vk.swapchain;
 
-	if (vkCreateSwapchainKHR(gr->vk.gpu, &scci, NULL, &gr->vk.swapchain) != VK_SUCCESS)
+	if (vkCreateSwapchainKHR(gfx.vk.gpu, &scci, NULL, &gfx.vk.swapchain) != VK_SUCCESS)
 		return fail_msg("graphics: vkCreateSwapchainKHR() failed!");
 
 	log_i("graphics: Swapchain initialized");
 
-	gr->vk.swapchain_width  = extent.width;
-	gr->vk.swapchain_height = extent.height;
-	gr->vk.swapchain_format = format.format;
+	gfx.vk.swapchain_width  = extent.width;
+	gfx.vk.swapchain_height = extent.height;
+	gfx.vk.swapchain_format = format.format;
 
-	vkGetSwapchainImagesKHR(gr->vk.gpu, gr->vk.swapchain, (uint*)&gr->vk.swapchain_length, gr->vk.swapchain_images);
+	vkGetSwapchainImagesKHR(gfx.vk.gpu, gfx.vk.swapchain, (uint*)&gfx.vk.swapchain_length, gfx.vk.swapchain_images);
 
-	watch("%d", gr->vk.swapchain_length);
+	watch("%d", gfx.vk.swapchain_length);
 
-	for (int n=0; n < gr->vk.swapchain_length; n++) {
+	for (int n=0; n < gfx.vk.swapchain_length; n++) {
 
 		VkImageViewCreateInfo ivci = {};
 
 		ivci.sType                           = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-		ivci.image                           = gr->vk.swapchain_images[n];
+		ivci.image                           = gfx.vk.swapchain_images[n];
 		ivci.viewType                        = VK_IMAGE_VIEW_TYPE_2D;
-		ivci.format                          = gr->vk.swapchain_format;
+		ivci.format                          = gfx.vk.swapchain_format;
 		ivci.components.r                    = VK_COMPONENT_SWIZZLE_IDENTITY;
 		ivci.components.g                    = VK_COMPONENT_SWIZZLE_IDENTITY;
 		ivci.components.b                    = VK_COMPONENT_SWIZZLE_IDENTITY;
@@ -1006,7 +1259,7 @@ bool init_swapchain(graphics *gr)
 		ivci.subresourceRange.baseArrayLayer = 0;
 		ivci.subresourceRange.layerCount     = 1;
 
-		if (vkCreateImageView(gr->vk.gpu, &ivci, NULL, &gr->vk.swapchain_views[n]) != VK_SUCCESS)
+		if (vkCreateImageView(gfx.vk.gpu, &ivci, NULL, &gfx.vk.swapchain_views[n]) != VK_SUCCESS)
 			return fail_msg("graphics: vkCreateImageView() failed!");
 
 	}
@@ -1018,7 +1271,7 @@ bool init_swapchain(graphics *gr)
 
 
 
-bool init_commandpool(graphics *gr)
+bool init_commandpool()
 {
 
 	VkCommandPoolCreateInfo     cpci = {};
@@ -1027,36 +1280,36 @@ bool init_commandpool(graphics *gr)
 	// Create Graphics Pool
 	{
 		cpci.sType            = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-		cpci.queueFamilyIndex = gr->vk.graphics_queue_index;
+		cpci.queueFamilyIndex = gfx.vk.graphics_queue_index;
 		cpci.flags            = 0;
 
-		if (vkCreateCommandPool(gr->vk.gpu, &cpci, NULL, &gr->vk.command_pool) != VK_SUCCESS)
+		if (vkCreateCommandPool(gfx.vk.gpu, &cpci, NULL, &gfx.vk.command_pool) != VK_SUCCESS)
 			return fail_msg("graphics: [graphics] vkCreateCommandPool() failed!");
 
 		cbai.sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-		cbai.commandPool        = gr->vk.command_pool;
+		cbai.commandPool        = gfx.vk.command_pool;
 		cbai.level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-		cbai.commandBufferCount = gr->vk.swapchain_length;
+		cbai.commandBufferCount = gfx.vk.swapchain_length;
 
-		if (vkAllocateCommandBuffers(gr->vk.gpu, &cbai, &gr->vk.command_buffer[0]) != VK_SUCCESS)
+		if (vkAllocateCommandBuffers(gfx.vk.gpu, &cbai, &gfx.vk.command_buffer[0]) != VK_SUCCESS)
 			return fail_msg("graphics: [graphics] vkAllocateCommandBuffers() failed!");
 	}
 
 	// Create Transfer Pool
 	{
 		cpci.sType            = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-		cpci.queueFamilyIndex = gr->vk.transfer_queue_index;
+		cpci.queueFamilyIndex = gfx.vk.transfer_queue_index;
 		cpci.flags            = 0;
 
-		if (vkCreateCommandPool(gr->vk.gpu, &cpci, NULL, &gr->vk.transfer_pool) != VK_SUCCESS)
+		if (vkCreateCommandPool(gfx.vk.gpu, &cpci, NULL, &gfx.vk.transfer_pool) != VK_SUCCESS)
 			return fail_msg("graphics: [transfer] vkCreateCommandPool() failed!");
 
 		cbai.sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-		cbai.commandPool        = gr->vk.transfer_pool;
+		cbai.commandPool        = gfx.vk.transfer_pool;
 		cbai.level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 		cbai.commandBufferCount = 1;
 
-		if (vkAllocateCommandBuffers(gr->vk.gpu, &cbai, &gr->vk.transfer_buffer) != VK_SUCCESS)
+		if (vkAllocateCommandBuffers(gfx.vk.gpu, &cbai, &gfx.vk.transfer_buffer) != VK_SUCCESS)
 			return fail_msg("graphics: [transfer] vkAllocateCommandBuffers() failed!");
 	}
 
@@ -1068,17 +1321,17 @@ bool init_commandpool(graphics *gr)
 
 
 
-bool init_synchronization(graphics *gr)
+bool init_synchronization()
 {
 
 	VkSemaphoreCreateInfo sci = {};
 
 	sci.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
-	if (vkCreateSemaphore(gr->vk.gpu, &sci, NULL, &gr->vk.signal_image_ready) != VK_SUCCESS)
+	if (vkCreateSemaphore(gfx.vk.gpu, &sci, NULL, &gfx.vk.signal_image_ready) != VK_SUCCESS)
 		return fail_msg("graphics: [image] vkCreateSemaphore() failed!");
 
-	if (vkCreateSemaphore(gr->vk.gpu, &sci, NULL, &gr->vk.signal_render_complete) != VK_SUCCESS)
+	if (vkCreateSemaphore(gfx.vk.gpu, &sci, NULL, &gfx.vk.signal_render_complete) != VK_SUCCESS)
 		return fail_msg("graphics: [render] vkCreateSemaphore() failed!");
 
 	return true;
@@ -1087,7 +1340,7 @@ bool init_synchronization(graphics *gr)
 
 
 
-bool init_descriptors(graphics *gr)
+bool init_descriptors()
 {
 
 	{
@@ -1105,7 +1358,7 @@ bool init_descriptors(graphics *gr)
 		dpci.pPoolSizes    = &dps;
 		dpci.maxSets       = 256;
 
-		if (vkCreateDescriptorPool(gr->vk.gpu, &dpci, NULL, &gr->vk.descriptor_uniform_pool) != VK_SUCCESS)
+		if (vkCreateDescriptorPool(gfx.vk.gpu, &dpci, NULL, &gfx.vk.descriptor_uniform_pool) != VK_SUCCESS)
 			return fail_msg("graphics: [uniform] vkCreateDescriptorPool() failed!");
 
 		dslb.binding            = 0;
@@ -1118,7 +1371,7 @@ bool init_descriptors(graphics *gr)
 		dslci.bindingCount = 1;
 		dslci.pBindings    = &dslb;
 
-		if (vkCreateDescriptorSetLayout(gr->vk.gpu, &dslci, NULL, &gr->vk.descriptor_uniform_layout) != VK_SUCCESS)
+		if (vkCreateDescriptorSetLayout(gfx.vk.gpu, &dslci, NULL, &gfx.vk.descriptor_uniform_layout) != VK_SUCCESS)
 			return fail_msg("graphics: [uniform] vkCreateDescriptorSetLayout() failed!");
 
 	}
@@ -1137,7 +1390,7 @@ bool init_descriptors(graphics *gr)
 		dpci.pPoolSizes    = &dps;
 		dpci.maxSets       = 256;
 
-		if (vkCreateDescriptorPool(gr->vk.gpu, &dpci, NULL, &gr->vk.descriptor_texture_pool) != VK_SUCCESS)
+		if (vkCreateDescriptorPool(gfx.vk.gpu, &dpci, NULL, &gfx.vk.descriptor_texture_pool) != VK_SUCCESS)
 			return fail_msg("graphics: [texture] vkCreateDescriptorPool() failed!");
 
 		dslb.binding            = 0;
@@ -1150,14 +1403,14 @@ bool init_descriptors(graphics *gr)
 		dslci.bindingCount = 1;
 		dslci.pBindings    = &dslb;
 
-		if (vkCreateDescriptorSetLayout(gr->vk.gpu, &dslci, NULL, &gr->vk.descriptor_texture_layout) != VK_SUCCESS)
+		if (vkCreateDescriptorSetLayout(gfx.vk.gpu, &dslci, NULL, &gfx.vk.descriptor_texture_layout) != VK_SUCCESS)
 			return fail_msg("graphics: [texture] vkCreateDescriptorSetLayout() failed!");
 
 	}
 
 	const VkDescriptorSetLayout descriptors[] = {
-		gr->vk.descriptor_uniform_layout,
-		gr->vk.descriptor_texture_layout
+		gfx.vk.descriptor_uniform_layout,
+		gfx.vk.descriptor_texture_layout
 	};
 
 	VkPipelineLayoutCreateInfo plci = {};
@@ -1170,7 +1423,7 @@ bool init_descriptors(graphics *gr)
 
 	VkPipelineLayout layout = NULL;
 
-	if (vkCreatePipelineLayout(gr->vk.gpu, &plci, NULL, &gr->vk.pipeline_layout) != VK_SUCCESS)
+	if (vkCreatePipelineLayout(gfx.vk.gpu, &plci, NULL, &gfx.vk.pipeline_layout) != VK_SUCCESS)
 		return false;
 
 	return true;

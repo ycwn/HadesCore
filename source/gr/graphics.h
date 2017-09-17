@@ -6,7 +6,7 @@
 
 #define GR_VKSYM_EXT(sym) extern PFN_##sym sym;
 #define GR_VKSYM_DEF(sym) PFN_##sym sym = NULL;
-#define GR_VKSYM(sym)     if ((sym = (PFN_##sym)vkGetInstanceProcAddr(gr->vk.instance, #sym)) == NULL) log_d("graphics: " #sym "() == NULL!");
+#define GR_VKSYM(sym)     if ((sym = (PFN_##sym)vkGetInstanceProcAddr(gfx.vk.instance, #sym)) == NULL) log_d("graphics: " #sym "() == NULL!");
 
 GR_VKSYM_EXT(vkAllocateCommandBuffers);
 GR_VKSYM_EXT(vkAllocateDescriptorSets);
@@ -180,15 +180,24 @@ typedef struct _graphics_t {
 
 
 graphics *gr_create();
-void      gr_destroy(graphics *gr);
+void      gr_destroy();
 
-bool gr_request_instance_extension(graphics *gr, const char *ext);
-bool gr_request_device_extension(  graphics *gr, const char *ext);
+bool gr_request_instance_extension(const char *ext);
+bool gr_request_device_extension(  const char *ext);
 
-bool gr_set_video(graphics *gr);
-bool gr_build_pipeline(graphics *gr, const char *file);
+bool gr_set_video();
+bool gr_build_pipeline(const char *file);
+void gr_submit();
 
-void gr_submit(graphics *gr);
+int  gr_get_memory_type(uint mask, uint props);
+bool gr_create_buffer(VkBuffer *buf, VkDeviceMemory *mem, size_t size, uint usage, uint props);
+bool gr_create_image( VkImage  *img, VkDeviceMemory *mem, VkFormat format, uint width, uint height, uint depth,	uint mipmaps, uint layers, uint tiling, uint usage, uint props);
+bool gr_create_image_view(VkImageView *view, VkImage img, VkFormat fmt);
+void gr_transfer_begin();
+void gr_transfer_end();
+void gr_copy_buffer_to_buffer(VkBuffer src, VkBuffer dst, size_t len);
+void gr_copy_buffer_to_image(VkBuffer src, VkImage dst, uint width, uint height, uint depth);
+void gr_transition_layout(VkImage img, VkImageLayout layout, VkAccessFlagBits src, VkAccessFlagBits dst);
 
 
 #endif

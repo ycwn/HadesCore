@@ -84,7 +84,7 @@ SDL_INIT_GAMECONTROLLER
 void hades_destroy()
 {
 
-	gr_destroy(hades_core.gfx);
+	gr_destroy();
 
 	chrono_destroy();
 	blob_destroy();
@@ -115,7 +115,7 @@ bool hades_update()
 		//gui update
 		//logic update
 
-		gr_submit(hades_core.gfx);
+		gr_submit();
 
 	}
 
