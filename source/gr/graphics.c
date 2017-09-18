@@ -11,6 +11,7 @@
 #include "gr/limits.h"
 #include "gr/graphics.h"
 #include "gr/vertexformat.h"
+#include "gr/pixelformat.h"
 #include "gr/framebuffer.h"
 #include "gr/rendertarget.h"
 #include "gr/shader.h"
@@ -211,6 +212,7 @@ graphics *gr_create()
 
 	reset();
 
+	gr_pixelformat_create(&gfx);
 	gr_rendertarget_create(&gfx);
 	gr_framebuffer_create(&gfx);
 	gr_shader_create(&gfx);
@@ -236,6 +238,7 @@ void gr_destroy()
 	gr_shader_destroy();
 	gr_framebuffer_destroy();
 	gr_rendertarget_destroy();
+	gr_pixelformat_destroy();
 
 	destroy();
 
@@ -311,6 +314,7 @@ bool gr_set_video()
 		!init_vulkan()      || !init_device()          || !init_swapchain()   ||
 		!init_commandpool() || !init_synchronization() || !init_descriptors() ||
 
+		!gr_pixelformat_init() ||
 		!gr_framebuffer_init()) {
 
 		log_e("graphics: Graphics initialization sequence failed");
