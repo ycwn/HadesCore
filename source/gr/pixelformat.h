@@ -19,14 +19,15 @@ typedef struct _gr_pixelformat_t {
 	int channels;
 
 	int bits;
-	int bits_r;
-	int bits_g;
-	int bits_b;
-	int bits_a;
-	int bits_d;
-	int bits_s;
+	int bits_r, bits_g, bits_b, bits_a;
+	int bits_d, bits_s;
 
 	int packing;
+
+	int block_w;
+	int block_h;
+	int block_d;
+
 	int alignment;
 
 	VkFormatProperties properties;
