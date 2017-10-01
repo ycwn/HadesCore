@@ -10,3 +10,9 @@
 [submodule "engine/libs/zlib"]
 	path = engine/libs/zlib
 	url = https://github.com/madler/zlib.git
+[submodule "engine/libs/vectorial"]
+	path = engine/libs/vectorial
+	url = https://github.com/scoopr/vectorial
+[submodule "engine/libs/trex"]
+	path = engine/libs/trex
+	url = https://github.com/kimperator/T-Rex.git

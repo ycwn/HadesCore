@@ -1,0 +1,33 @@
+
+######################################################
+#
+# Build a static binary of libportaudio
+#
+
+
+lib_targets += libportaudio_build
+
+libportaudio_base = portaudio
+libportaudio_src  = $(lib_src)/$(libportaudio_base)
+libportaudio_lib  = $(lib_dst)/libportaudio.a
+libportaudio_tmp  = build/portaudio
+
+
+libportaudio_build: $(libportaudio_lib)
+	$(eval cflags += -DHAVE_PORTAUDIO)
+	$(eval libs   += portaudio)
+
+
+$(libportaudio_lib): $(libportaudio_tgz)
+	mkdir -p $(libportaudio_tmp)/build
+	mkdir -p $(lib_dst)/include
+	cp -Rp $(CURDIR)/$(libportaudio_src)/* $(libportaudio_tmp)/build/
+	cd $(libportaudio_tmp)/build &&                         \
+		CC="$(cc)" CFLAGS="$(cflags)" ./configure       \
+			--prefix=$(abspath $(libportaudio_tmp)) \
+			--enable-static                         \
+			--disable-shared &&                     \
+		make all install
+	@cp -Rv $(libportaudio_tmp)/include/* $(lib_dst)/include
+	@cp -Rv $(libportaudio_tmp)/lib/lib*  $(lib_dst)/
+

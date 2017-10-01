@@ -1,0 +1,22 @@
+
+######################################################
+#
+# Build a static binary of vectorial
+#
+
+
+lib_targets += libvectorial_build
+
+libvectorial_base = vectorial
+libvectorial_src  = $(lib_src)/$(libvectorial_base)
+libvectorial_lib  = vectorial/vectorial.h
+
+
+libvectorial_build: $(libvectorial_lib)
+	$(eval cflags += -DHAVE_VECTORIAL)
+
+
+$(libvectorial_lib):
+	mkdir -p $(lib_dst)/include/vectorial
+	cp -Rp $(CURDIR)/$(libvectorial_src)/include/vectorial/*.h $(lib_dst)/include/vectorial/
+

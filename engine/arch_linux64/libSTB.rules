@@ -1,0 +1,23 @@
+
+######################################################
+#
+# Build a static binary of STB
+#
+
+
+lib_targets += libSTB_build
+
+libSTB_base = stb
+libSTB_src  = $(lib_src)/$(libSTB_base)
+libSTB_lib  = STB/stb.h
+
+
+libSTB_build: $(libSTB_lib)
+	$(eval cflags += -DHAVE_STB)
+
+
+$(libSTB_lib): $(libSTB_tgz)
+	mkdir -p $(lib_dst)/include/STB
+	cp -Rp $(CURDIR)/$(libSTB_src)/*.h $(lib_dst)/include/STB/
+	cp -Rp $(CURDIR)/$(libSTB_src)/*.c $(lib_dst)/include/STB/
+

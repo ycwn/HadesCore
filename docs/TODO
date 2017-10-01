@@ -1,6 +1,4 @@
 
-add all libraries to buildsystem
-fix buildsystem dependency generation
 implement vector math support
 implement attachments
 implement pipeline parser

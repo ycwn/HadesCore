@@ -56,7 +56,7 @@ clean: platform-clean
 purge: clean clean-data clean-docs
 	rm -rf build/
 
-armageddon:
+armageddon: purge
 	rm config.rules
 
 tarball: armageddon

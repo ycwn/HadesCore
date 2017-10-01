@@ -1,0 +1,32 @@
+
+######################################################
+#
+# Build a static binary of zlib
+#
+
+
+lib_targets += libzlib_build
+
+libzlib_base = zlib
+libzlib_src  = $(lib_src)/$(libzlib_base)
+libzlib_lib  = $(lib_dst)/libz.a
+libzlib_tmp  = build/zlib
+
+
+libzlib_build: $(libzlib_lib)
+	$(eval cflags += -DHAVE_ZLIB)
+	$(eval libs   += z)
+
+
+$(libzlib_lib): $(libzlib_tgz)
+	mkdir -p $(libzlib_tmp)/build
+	mkdir -p $(lib_dst)/include
+	cp -Rp $(CURDIR)/$(libzlib_src)/* $(libzlib_tmp)/build/
+	cd $(libzlib_tmp)/build &&                         \
+		CC="$(cc)" CFLAGS="$(cflags)" ./configure  \
+			--prefix=$(abspath $(libzlib_tmp)) \
+			--static &&                        \
+		make all install
+	@cp -Rv $(libzlib_tmp)/include/* $(lib_dst)/include
+	@cp -Rv $(libzlib_tmp)/lib/lib*  $(lib_dst)/
+

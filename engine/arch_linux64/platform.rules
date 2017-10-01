@@ -11,7 +11,7 @@ ld = ldc2
 
 cflags  = -O0 -g -MMD -MP -Wno-initializer-overrides -Werror=implicit-function-declaration -Werror=incompatible-pointer-types -Werror=int-conversion -Werror=format
 dflags  = -O0 -g
-ldflags =
+ldflags = -L-g
 libs    =
 
 export lib_targets =
@@ -19,19 +19,19 @@ export lib_src     = engine/libs
 export lib_dst     = build/libs
 
 include engine/arch_linux64/libSDL2.rules
-#include libSTB.rules
-#include PortAudio.rules
+include engine/arch_linux64/libportaudio.rules
+include engine/arch_linux64/libzlib.rules
+include engine/arch_linux64/libSTB.rules
+include engine/arch_linux64/libvectorial.rules
 
-
-
-ifneq ("$(wildcard build/make.depend)","")
-include build/make.depend
-endif
 
 bin    = build/hades
 objs_a = $(autosrc:build/%.c=build/%.o)
 objs_c = $(patsubst source/%.c,build/obj/%.o,$(filter %.c,$(source)))
 objs_d = $(patsubst source/%.d,build/obj/%.o,$(filter %.d,$(source)))
+deps   = $(objs_c:%.o=%.d)
+
+-include $(deps)
 
 
 mkdirs: $(source)
@@ -48,7 +48,7 @@ platform-pack:
 
 platform-clean:
 	rm -f $(bin)
-	rm -f $(objs_a) $(objs_c) $(objs_d)
+	rm -f $(objs_a) $(objs_c) $(objs_d) $(deps)
 
 
 $(bin): $(objs_a) $(objs_c) $(objs_d)
@@ -62,7 +62,4 @@ $(objs_c): build/obj/%.o: source/%.c
 
 $(objs_d): build/obj/%.o: source/%.d
 	$(dc) $(dflags) -c $< -of=$@
-
-
--include $(obj_c:.o=%.d)
 
