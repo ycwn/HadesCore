@@ -242,12 +242,14 @@ void gr_dds_init(gr_dds *dds)
 	dds->image.height = 0;
 	dds->image.depth  = 0;
 	dds->image.length = 0;
+	dds->image.offset = 0;
 
 	dds->mipmap.pixels = NULL;
 	dds->mipmap.width  = 0;
 	dds->mipmap.height = 0;
 	dds->mipmap.depth  = 0;
 	dds->mipmap.length = 0;
+	dds->image.offset = 0;
 
 }
 
@@ -329,7 +331,10 @@ bool gr_dds_select(gr_dds *dds, uint image, uint mipmap)
 	if (image >= dds->image_count || mipmap >= dds->mipmap_count)
 		return false;
 
-	dds->image.pixels  = dds->data + dds->image.length * image;
+	dds->image.offset = dds->image.length * image;
+	dds->image.pixels = dds->data + dds->image.offset;
+
+	dds->mipmap.offset = dds->image.offset;
 	dds->mipmap.pixels = dds->image.pixels;
 
 	dds->mipmap.width  = dds->image.width;
@@ -339,6 +344,7 @@ bool gr_dds_select(gr_dds *dds, uint image, uint mipmap)
 
 	for (int n=0; n < mipmap; n++) {
 
+		dds->mipmap.offset += dds->mipmap.length;
 		dds->mipmap.pixels += dds->mipmap.length;
 
 		dds->mipmap.width  = maxu(dds->mipmap.width  >> 1, 1);

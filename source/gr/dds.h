@@ -21,6 +21,7 @@ typedef struct _gr_dds_t {
 		uint height;
 		uint depth;
 		uint length;
+		uint offset;
 
 	} image, mipmap;
 
