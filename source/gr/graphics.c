@@ -554,7 +554,8 @@ bool gr_create_image(
 		VkDeviceMemory *mem,
 		VkFormat        format,
 		uint            width,   uint height, uint depth,
-		uint            mipmaps, uint layers, uint tiling, uint usage, uint props)
+		uint            mipmaps, uint layers,
+		uint            tiling,  uint usage,  uint props, uint flags)
 {
 
 	*img = NULL;
@@ -575,6 +576,7 @@ bool gr_create_image(
 	ici.tiling        = tiling;
 	ici.initialLayout = VK_IMAGE_LAYOUT_PREINITIALIZED;
 	ici.usage         = usage;
+	ici.flags         = flags;
 	ici.samples       = VK_SAMPLE_COUNT_1_BIT;
 	ici.sharingMode   = VK_SHARING_MODE_EXCLUSIVE;
 
@@ -662,6 +664,21 @@ void gr_transfer_end()
 
 
 
+void gr_upload(const void *src, VkDeviceMemory dst, size_t len)
+{
+
+	void *data = NULL;
+
+	vkMapMemory(gfx.vk.gpu, dst, 0, len, 0, &data);
+
+        memcpy(data, src, len);
+
+	vkUnmapMemory(gfx.vk.gpu, dst);
+
+}
+
+
+
 void gr_copy_buffer_to_buffer(VkBuffer src, VkBuffer dst, size_t len)
 {
 
@@ -698,6 +715,67 @@ void gr_copy_buffer_to_image(VkBuffer src, VkImage dst, uint width, uint height,
 
 	vkCmdCopyBufferToImage(gfx.vk.transfer_buffer, src, dst,
 		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &bic);
+
+	gr_transfer_end();
+
+}
+
+
+
+void gr_mcopy_buffer_to_buffer(VkBuffer src, VkBuffer dst, uint skip[], uint offset[], size_t length[], uint count)
+{
+
+	gr_transfer_begin();
+
+	VkBufferCopy bc[count];
+
+	for (int n=0; n < count; n++) {
+
+		bc[n].srcOffset = skip[n];
+		bc[n].dstOffset = offset[n];
+		bc[n].size      = length[n];
+
+	}
+
+	vkCmdCopyBuffer(gfx.vk.transfer_buffer, src, dst, count, &bc[0]);
+
+	gr_transfer_end();
+
+}
+
+
+
+void gr_mcopy_buffer_to_image(
+		VkBuffer src, VkImage dst,
+		uint width,    uint height,   uint depth,
+		uint offset[], uint mipmap[], uint layer[],
+		uint count)
+{
+
+	gr_transfer_begin();
+
+	VkBufferImageCopy bic[count];
+
+	for (int n=0; n < count; n++) {
+
+		bic[n].bufferOffset      = offset[n];
+		bic[n].bufferRowLength   = 0;
+		bic[n].bufferImageHeight = 0;
+		bic[n].imageSubresource.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+		bic[n].imageSubresource.mipLevel       = mipmap[n];
+		bic[n].imageSubresource.baseArrayLayer = layer[n];
+		bic[n].imageSubresource.layerCount     = 1;
+		bic[n].imageOffset.x      = 0;
+		bic[n].imageOffset.y      = 0;
+		bic[n].imageOffset.z      = 0;
+		bic[n].imageExtent.width  = maxu(width  >> mipmap[n], 1);
+		bic[n].imageExtent.height = maxu(height >> mipmap[n], 1);
+		bic[n].imageExtent.depth  = maxu(depth  >> mipmap[n], 1);
+
+	}
+
+	vkCmdCopyBufferToImage(gfx.vk.transfer_buffer, src, dst,
+			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, count, &bic[0]);
 
 	gr_transfer_end();
 

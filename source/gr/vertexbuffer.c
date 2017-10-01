@@ -126,12 +126,8 @@ bool commit(struct _gr_vbuffer_t *dst, int usage, const void *buf, size_t len)
 
 	}
 
-	void *data;
+	gr_upload(buf, dst->memory, len);
 
-	vkMapMemory(gfx->vk.gpu, dst->memory, 0, len, 0, &data);
-	memcpy(data, buf, len);
-
-	vkUnmapMemory(gfx->vk.gpu, dst->memory);
 	return true;
 
 }

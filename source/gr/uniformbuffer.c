@@ -101,12 +101,7 @@ bool gr_uniformbuffer_commit(gr_uniformbuffer *ub, const void *buf, size_t len)
 
 	}
 
-	void *data;
-
-	vkMapMemory(gfx->vk.gpu, ub->memory, 0, len, 0, &data);
-	memcpy(data, buf, len);
-
-	vkUnmapMemory(gfx->vk.gpu, ub->memory);
+	gr_upload(buf, ub->memory, len);
 
 	VkDescriptorBufferInfo dbi = { 0 };
 	VkWriteDescriptorSet   wds = { 0 };
