@@ -1,9 +1,9 @@
 
-implement DDS support
-implement textures
+add all libraries to buildsystem
+fix buildsystem dependency generation
+implement vector math support
 implement attachments
 implement pipeline parser
-implement vector math support
 implement packed vector encoder functions
 rework geoblender to work with new vertexformats
 implement model loader
