@@ -15,6 +15,7 @@
 #include "gr/framebuffer.h"
 #include "gr/rendertarget.h"
 #include "gr/shader.h"
+#include "gr/texture.h"
 #include "gr/vertexbuffer.h"
 #include "gr/uniformbuffer.h"
 #include "gr/command.h"
@@ -216,6 +217,7 @@ graphics *gr_create()
 	gr_rendertarget_create(&gfx);
 	gr_framebuffer_create(&gfx);
 	gr_shader_create(&gfx);
+	gr_texture_create(&gfx);
 	gr_command_create();
 	gr_commandqueue_create();
 	gr_vertexbuffer_create(&gfx);
@@ -235,6 +237,7 @@ void gr_destroy()
 	gr_vertexbuffer_destroy();
 	gr_commandqueue_destroy();
 	gr_command_destroy();
+	gr_texture_destroy();
 	gr_shader_destroy();
 	gr_framebuffer_destroy();
 	gr_rendertarget_destroy();
