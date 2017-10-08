@@ -26,6 +26,11 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_vulkan.h>
 
+#include <vectorial/simd4f.h>
+#include <vectorial/simd4x4f.h>
+
+typedef simd4f   vec4;
+typedef simd4x4f mat4;
 
 #endif
 

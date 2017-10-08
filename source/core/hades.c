@@ -15,6 +15,8 @@
 #include "gr/limits.h"
 #include "gr/graphics.h"
 
+#include "sg/transform.h"
+
 
 extern const unsigned int  _hades_build_number;
 extern const unsigned int  _hades_build_revision;
@@ -114,6 +116,7 @@ bool hades_update()
 		//input update
 		//gui update
 		//logic update
+		sg_transform_update();
 
 		gr_submit();
 

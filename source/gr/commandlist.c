@@ -31,7 +31,7 @@ static gr_vertexbuffer  guard_vertices = { 0 };
 void gr_commandlist_init(gr_commandlist *cmdl)
 {
 
-	cmdl->modelview = -1;//mat4::Identity(); //FIXME: No vector math!
+	simd4x4f_identity(&cmdl->modelview);
 
 	cmdl->vertices = &guard_vertices;
 	cmdl->uniforms = NULL;//&guard_uniforms; //FIXME: No uniform buffers!

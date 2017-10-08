@@ -11,7 +11,6 @@ enum {
 };
 
 typedef void gr_texturearray;
-typedef int  mat4;
 
 typedef struct _gr_command_t {
 
