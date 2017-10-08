@@ -163,17 +163,11 @@ VkRenderPass gr_rendertarget_create_renderpass(const gr_rendertarget *rt)
 	if (rt->attachment_count <= 0)
 		return NULL;
 
-	VkAttachmentDescription ad[GR_ATTACHMENTS_MAX];
-	VkAttachmentReference   ar_c[GR_ATTACHMENTS_MAX];
-	VkAttachmentReference   ar_ds;
-	VkSubpassDescription    sd;
-	VkRenderPassCreateInfo  rpci;
-
-	mzero(ad);
-	mzero(ar_c);
-	szero(ar_ds);
-	szero(sd);
-	szero(rpci);
+	VkAttachmentDescription ad[GR_ATTACHMENTS_MAX]   = { 0 };
+	VkAttachmentReference   ar_c[GR_ATTACHMENTS_MAX] = { 0 };
+	VkAttachmentReference   ar_ds = { 0 };
+	VkSubpassDescription    sd    = { 0 };
+	VkRenderPassCreateInfo  rpci  = { 0 };
 
 	int ar_c_num  = 0;
 	int ar_ds_num = 0;

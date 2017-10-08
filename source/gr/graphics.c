@@ -373,7 +373,7 @@ void gr_submit()
 	//core::surface   *curr_tex    = NULL;
 
 	const VkDeviceSize       zero = 0;
-	VkCommandBufferBeginInfo cbbi;
+	VkCommandBufferBeginInfo cbbi = { 0 };
 
 	cbbi.sType            = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 	cbbi.flags            = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
@@ -393,7 +393,7 @@ void gr_submit()
 			curr_target = cmd->shader->rt;
 			curr_shader = NULL;
 
-			VkRenderPassBeginInfo rpi;
+			VkRenderPassBeginInfo rpi = { 0 };
 
 			rpi.sType                    = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 			rpi.renderPass               = curr_target->renderpass;
@@ -465,8 +465,8 @@ void gr_submit()
 	if (vkEndCommandBuffer(curr_cmd) != VK_SUCCESS)
 		return;
 
-	VkSubmitInfo     si;
-	VkPresentInfoKHR pi;
+	VkSubmitInfo     si = { 0 };
+	VkPresentInfoKHR pi = { 0 };
 
 	si.sType                = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 	si.waitSemaphoreCount   = 1;

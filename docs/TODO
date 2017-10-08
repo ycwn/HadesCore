@@ -22,3 +22,6 @@ implement PBR deffered pipeline
 implement terrain renderer
 implement lighting
 
+Remove core/string.h
+Hide internals of gr/rendertarget
+

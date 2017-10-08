@@ -228,8 +228,8 @@ bool gr_texture_alloc(gr_texture *t,
 bool gr_texture_copy(gr_texture *t, const void *pixels, size_t len, uint offset[], uint mipmap[], uint layer[], uint count)
 {
 
-	VkBuffer       stage_buf;
-	VkDeviceMemory stage_mem;
+	VkBuffer       stage_buf = NULL;
+	VkDeviceMemory stage_mem = NULL;
 
 	gr_create_buffer(&stage_buf, &stage_mem,
 			len,

@@ -26,12 +26,12 @@ static const VkFormat depth_formats[]={
 
 static graphics        *gfx  = NULL;
 static gr_rendertarget *fbrt = NULL;
-static VkFormat         depthstencil_format;
-static VkImage          depthstencil_image;
-static VkDeviceMemory   depthstencil_memory;
-static VkImageView      depthstencil_view;
-static int              framebuffer_num;
-static VkFramebuffer    framebuffer_obj[GR_SWAPCHAIN_MAX];
+static VkFormat         depthstencil_format = VK_FORMAT_UNDEFINED;
+static VkImage          depthstencil_image  = NULL;
+static VkDeviceMemory   depthstencil_memory = NULL;
+static VkImageView      depthstencil_view   = NULL;
+static int              framebuffer_num     = 0;
+static VkFramebuffer    framebuffer_obj[GR_SWAPCHAIN_MAX] = { NULL };
 
 
 static void reset();
@@ -211,7 +211,7 @@ bool create_depthbuffer()
 	if (depthstencil_format == VK_FORMAT_UNDEFINED)
 		return false;
 
-	VkImageCreateInfo ici = {};
+	VkImageCreateInfo ici = { 0 };
 
 	ici.sType         = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
 	ici.imageType     = VK_IMAGE_TYPE_2D;
@@ -231,7 +231,7 @@ bool create_depthbuffer()
 		return false;
 
 	VkMemoryRequirements mr;
-	VkMemoryAllocateInfo mai = {};
+	VkMemoryAllocateInfo mai = { 0 };
 
 	vkGetImageMemoryRequirements(gfx->vk.gpu, depthstencil_image, &mr);
 
@@ -244,9 +244,7 @@ bool create_depthbuffer()
 
 	vkBindImageMemory(gfx->vk.gpu, depthstencil_image, depthstencil_memory, 0);
 
-	VkImageViewCreateInfo ivci;
-
-	szero(ivci);
+	VkImageViewCreateInfo ivci = { 0 };
 
 	ivci.sType                           = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
 	ivci.image                           = depthstencil_image;

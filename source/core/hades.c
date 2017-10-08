@@ -103,7 +103,7 @@ bool hades_update()
 
 	SDL_Event event;
 
-	while (SDL_PollEvent(&event)) {
+	while (SDL_PollEvent(&event)) { // Pump system events
 
 		if (event.type == SDL_QUIT) {
 
@@ -112,15 +112,19 @@ bool hades_update()
 
 		}
 
-		chrono_update();
-		//input update
-		//gui update
-		//logic update
-		sg_transform_update();
-
-		gr_submit();
-
 	}
+
+	chrono_update(); // Advance game time
+	// Gather inputs
+	// Trigger script events
+	// Process UI updates
+	// Simulate AI
+	// Update animations
+	// Simulate physics
+	sg_transform_update(); // Update transform hierarchy
+	// Harvest visible objects and populate render queue
+	// Update uniform buffers
+	gr_submit();  // Submit render queue to GPU
 
 	return !hades_core.terminate;
 
