@@ -1,5 +1,4 @@
 
-implement vector math support
 implement attachments
 implement pipeline parser
 implement packed vector encoder functions
@@ -13,6 +12,7 @@ implement shadowmap cache
 
 port scenegraph code
 split visibility culling from transform hierarchy
+implement entity-component system (requires LDC with DMD 2.076 backend)
 port input subsystem
 
 implement D interface
