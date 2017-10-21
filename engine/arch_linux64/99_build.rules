@@ -5,27 +5,6 @@
 #
 
 
-cc = clang
-dc = ldc2
-ld = ldc2
-
-cflags  = -O0 -g -MMD -MP -Wno-initializer-overrides -Werror=implicit-function-declaration -Werror=incompatible-pointer-types -Werror=int-conversion -Werror=format
-dflags  = -O0 -g
-ldflags = -L-g
-libs    =
-
-export lib_targets =
-export lib_src     = engine/libs
-export lib_dst     = build/libs
-
-include engine/arch_linux64/libSDL2.rules
-include engine/arch_linux64/libportaudio.rules
-include engine/arch_linux64/libzlib.rules
-include engine/arch_linux64/libSTB.rules
-include engine/arch_linux64/libvectorial.rules
-
-
-bin    = build/hades
 objs_a = $(autosrc:build/%.c=build/%.o)
 objs_c = $(patsubst source/%.c,build/obj/%.o,$(filter %.c,$(source)))
 objs_d = $(patsubst source/%.d,build/obj/%.o,$(filter %.d,$(source)))
@@ -52,7 +31,7 @@ platform-clean:
 
 
 $(bin): $(objs_a) $(objs_c) $(objs_d)
-	$(ld) $^ -L-Lbuild/libs $(ldflags) $(libs:%=-L-l%) -of=$@
+	$(ld) $^ -L-Lbuild/libs $(ldflags) $(libs:%=-L-l%) -of $@
 
 $(objs_a): build/%.o: build/%.c
 	$(cc) $(cflags) -c $< -o $@

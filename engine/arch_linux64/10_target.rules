@@ -1,0 +1,18 @@
+
+######################################################
+#
+# Debug/Release target definitions
+#
+
+
+release:
+	$(eval cflags  += -O3)
+	$(eval dflags  += -O3)
+	$(eval ldflags += -L-s)
+
+
+debug:
+	$(eval cflags  += -O0 -g)
+	$(eval dflags  += -O0 -g)
+	$(eval ldflags += -L-g)
+

@@ -30,8 +30,8 @@ GR_VKSYM_DEF(vkBindBufferMemory);
 GR_VKSYM_DEF(vkBindImageMemory);
 GR_VKSYM_DEF(vkCmdBeginRenderPass);
 GR_VKSYM_DEF(vkCmdBindDescriptorSets);
-GR_VKSYM_DEF(vkCmdBindPipeline);
 GR_VKSYM_DEF(vkCmdBindIndexBuffer);
+GR_VKSYM_DEF(vkCmdBindPipeline);
 GR_VKSYM_DEF(vkCmdBindVertexBuffers);
 GR_VKSYM_DEF(vkCmdCopyBuffer);
 GR_VKSYM_DEF(vkCmdCopyBufferToImage);
@@ -41,9 +41,10 @@ GR_VKSYM_DEF(vkCmdEndRenderPass);
 GR_VKSYM_DEF(vkCmdPipelineBarrier);
 GR_VKSYM_DEF(vkCreateBuffer);
 GR_VKSYM_DEF(vkCreateCommandPool);
-GR_VKSYM_DEF(vkCreateDescriptorSetLayout);
 GR_VKSYM_DEF(vkCreateDescriptorPool);
+GR_VKSYM_DEF(vkCreateDescriptorSetLayout);
 GR_VKSYM_DEF(vkCreateDevice);
+GR_VKSYM_DEF(vkCreateFence);
 GR_VKSYM_DEF(vkCreateFramebuffer);
 GR_VKSYM_DEF(vkCreateGraphicsPipelines);
 GR_VKSYM_DEF(vkCreateImage);
@@ -56,9 +57,10 @@ GR_VKSYM_DEF(vkCreateSemaphore);
 GR_VKSYM_DEF(vkCreateShaderModule);
 GR_VKSYM_DEF(vkDestroyBuffer);
 GR_VKSYM_DEF(vkDestroyCommandPool);
-GR_VKSYM_DEF(vkDestroyDescriptorSetLayout);
 GR_VKSYM_DEF(vkDestroyDescriptorPool);
+GR_VKSYM_DEF(vkDestroyDescriptorSetLayout);
 GR_VKSYM_DEF(vkDestroyDevice);
+GR_VKSYM_DEF(vkDestroyFence);
 GR_VKSYM_DEF(vkDestroyFramebuffer);
 GR_VKSYM_DEF(vkDestroyImage);
 GR_VKSYM_DEF(vkDestroyImageView);
@@ -74,8 +76,8 @@ GR_VKSYM_DEF(vkEnumerateDeviceExtensionProperties);
 GR_VKSYM_DEF(vkEnumerateInstanceExtensionProperties);
 GR_VKSYM_DEF(vkEnumeratePhysicalDevices);
 GR_VKSYM_DEF(vkFreeMemory);
-GR_VKSYM_DEF(vkGetDeviceQueue);
 GR_VKSYM_DEF(vkGetBufferMemoryRequirements);
+GR_VKSYM_DEF(vkGetDeviceQueue);
 GR_VKSYM_DEF(vkGetImageMemoryRequirements);
 GR_VKSYM_DEF(vkGetInstanceProcAddr);
 GR_VKSYM_DEF(vkGetPhysicalDeviceFeatures);
@@ -86,8 +88,10 @@ GR_VKSYM_DEF(vkGetPhysicalDeviceQueueFamilyProperties);
 GR_VKSYM_DEF(vkMapMemory);
 GR_VKSYM_DEF(vkQueueSubmit);
 GR_VKSYM_DEF(vkQueueWaitIdle);
+GR_VKSYM_DEF(vkResetFences);
 GR_VKSYM_DEF(vkUnmapMemory);
 GR_VKSYM_DEF(vkUpdateDescriptorSets);
+GR_VKSYM_DEF(vkWaitForFences);
 
 GR_VKSYM_DEF(vkAcquireNextImageKHR);
 GR_VKSYM_DEF(vkCreateSwapchainKHR);
@@ -105,7 +109,7 @@ GR_VKSYM_DEF(vkDestroyDebugReportCallbackEXT);
 
 #define GR_VKENUMERATE(name, N, T, func, ...)             \
 	uint name##_num = 0;                              \
-	T    name[(N)];                                   \
+	T    name[(N)] = {};                              \
 	do {                                              \
 		func(__VA_ARGS__, &name##_num, NULL);     \
 		watch("%d", name##_num);                  \
@@ -113,8 +117,6 @@ GR_VKSYM_DEF(vkDestroyDebugReportCallbackEXT);
 		func(__VA_ARGS__, &name##_num, &name[0]); \
 	} while (0)
 
-#define GR_VKENUM_SDL_EXTENSIONS(name, wnd) \
-	GR_VKENUMERATE(name, 16, const char*, SDL_Vulkan_GetInstanceExtensions, (wnd));
 
 #define GR_VKENUM_DEVICES(name, inst) \
 	GR_VKENUMERATE(name, 16, VkPhysicalDevice, vkEnumeratePhysicalDevices, (inst));
@@ -136,19 +138,18 @@ GR_VKSYM_DEF(vkDestroyDebugReportCallbackEXT);
 
 
 static const char *validation_layers[]={
-//	"VK_LAYER_LUNARG_standard_validation"
-//	"VK_LAYER_GOOGLE_unique_objects",
-	"VK_LAYER_LUNARG_device_limits",
-	"VK_LAYER_LUNARG_core_validation",
-	"VK_LAYER_LUNARG_image",
-	"VK_LAYER_LUNARG_object_tracker",
-	"VK_LAYER_LUNARG_parameter_validation",
-	"VK_LAYER_LUNARG_swapchain",
-	"VK_LAYER_GOOGLE_threading"
+	"VK_LAYER_LUNARG_standard_validation"
 };
 
 static const char *validation_extensions[]={
 	"VK_EXT_debug_report"
+};
+
+static const char *instance_extensions[]={
+};
+
+static const char *device_extensions[]={
+	"VK_KHR_swapchain"
 };
 
 
@@ -186,17 +187,6 @@ static inline bool fail_msg(const char *msg) {
 graphics *gr_create()
 {
 
-	if (SDL_WasInit(SDL_INIT_VIDEO))
-		return NULL;
-
-	if (SDL_InitSubSystem(SDL_INIT_VIDEO) < 0)
-		return NULL;
-
-	SDL_setenv("SDL_X11_XCB_LIBRARY", "libX11-xcb.so.1", 0);
-
-	if (SDL_Vulkan_LoadLibrary(NULL) < 0)
-		return NULL;
-
 	gfx.var.screen_width      = var_new("gr.screen.width",   "1024");
 	gfx.var.screen_height     = var_new("gr.screen.height",   "576");
 	gfx.var.screen_fullscreen = var_new("gr.screen.full",       "0");
@@ -222,6 +212,12 @@ graphics *gr_create()
 	gr_commandqueue_create();
 	gr_vertexbuffer_create(&gfx);
 
+	for (int n=0; n < countof(instance_extensions); n++)
+		gr_request_instance_extension(instance_extensions[n]);
+
+	for (int n=0; n < countof(device_extensions); n++)
+		gr_request_device_extension(device_extensions[n]);
+
 	return &gfx;
 
 }
@@ -230,9 +226,6 @@ graphics *gr_create()
 
 void gr_destroy()
 {
-
-	if (!SDL_WasInit(SDL_INIT_VIDEO))
-		return;
 
 	gr_vertexbuffer_destroy();
 	gr_commandqueue_destroy();
@@ -252,9 +245,6 @@ void gr_destroy()
 	var_del(gfx.var.vsync_adaptive);
 	var_del(gfx.var.triple_buffer);
 	var_del(gfx.var.validate);
-
-	SDL_Vulkan_UnloadLibrary();
-	SDL_QuitSubSystem(SDL_INIT_VIDEO);
 
 }
 
@@ -302,14 +292,13 @@ bool gr_set_video()
 
 	destroy();
 
-	uint flags = SDL_WINDOW_VULKAN;
+	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+	glfwWindowHint(GLFW_RESIZABLE,  GLFW_FALSE);
 
-	if (gfx.var.screen_fullscreen->integer)
-		flags |= SDL_WINDOW_FULLSCREEN;
-
-	gfx.window = SDL_CreateWindow("Hades Core",
-		SDL_WINDOWPOS_CENTERED,        SDL_WINDOWPOS_CENTERED,
-		gfx.var.screen_width->integer, gfx.var.screen_height->integer, flags);
+	gfx.window = glfwCreateWindow(
+			gfx.var.screen_width->integer, gfx.var.screen_height->integer,
+			"Hades Core",
+			gfx.var.screen_fullscreen->integer? glfwGetPrimaryMonitor(): NULL, NULL);
 
 	watch("%p", gfx.window);
 
@@ -366,11 +355,18 @@ void gr_submit()
 	gr_framebuffer_select();
 
 	VkCommandBuffer   curr_cmd    = gfx.vk.command_buffer[gfx.vk.swapchain_curr];
+	VkFence           curr_fence  = gfx.vk.command_fence[gfx.vk.swapchain_curr];
 	gr_rendertarget  *curr_target = NULL;
 	gr_shader        *curr_shader = NULL;
 	gr_vertexbuffer  *curr_vbo    = NULL;
 	gr_uniformbuffer *curr_ubo    = NULL;
 	//core::surface   *curr_tex    = NULL;
+
+	if (vkWaitForFences(gfx.vk.gpu, 1, &curr_fence, VK_TRUE, 1000000000) != VK_SUCCESS)
+		return;
+
+	if (vkResetFences(gfx.vk.gpu, 1, &curr_fence) != VK_SUCCESS)
+		return;
 
 	const VkDeviceSize       zero = 0;
 	VkCommandBufferBeginInfo cbbi = { 0 };
@@ -477,7 +473,7 @@ void gr_submit()
 	si.signalSemaphoreCount = 1;
 	si.pSignalSemaphores    = &gfx.vk.signal_render_complete;
 
-	vkQueueSubmit(gfx.vk.graphics_queue, 1, &si, NULL);
+	vkQueueSubmit(gfx.vk.graphics_queue, 1, &si, curr_fence);
 
 	pi.sType              = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
 	pi.waitSemaphoreCount = 1;
@@ -856,6 +852,7 @@ void reset()
 	gfx.vk.command_pool = NULL;
 
 	mzero(gfx.vk.command_buffer);
+	mzero(gfx.vk.command_fence);
 
 	gfx.vk.transfer_pool   = NULL;
 	gfx.vk.transfer_buffer = NULL;
@@ -893,6 +890,10 @@ void destroy()
 	if (gfx.vk.descriptor_texture_pool != NULL)
 		vkDestroyDescriptorPool(gfx.vk.gpu, gfx.vk.descriptor_texture_pool, NULL);
 
+	for (int n=0; n < gfx.vk.swapchain_length; n++)
+		if (gfx.vk.command_fence[n] != NULL)
+			vkDestroyFence(gfx.vk.gpu, gfx.vk.command_fence[n], NULL);
+
 	if (gfx.vk.signal_render_complete != NULL)
 		vkDestroySemaphore(gfx.vk.gpu, gfx.vk.signal_render_complete, NULL);
 
@@ -920,14 +921,14 @@ void destroy()
 	if (gfx.vk.surface != NULL)
 		vkDestroySurfaceKHR(gfx.vk.instance, gfx.vk.surface, NULL);
 
-//	if (callback != NULL)
-//		vkDestroyDebugReportCallbackEXT(instance, callback, NULL);
+	if (gfx.vk.callback != NULL)
+		vkDestroyDebugReportCallbackEXT(gfx.vk.instance, gfx.vk.callback, NULL);
 
 	if (gfx.vk.instance != NULL)
 		vkDestroyInstance(gfx.vk.instance, NULL);
 
 	if (gfx.window != NULL)
-		SDL_DestroyWindow(gfx.window);
+		glfwDestroyWindow(gfx.window);
 
 	reset();
 
@@ -938,21 +939,84 @@ void destroy()
 bool init_vulkan()
 {
 
-	vkGetInstanceProcAddr = (PFN_vkGetInstanceProcAddr)SDL_Vulkan_GetVkGetInstanceProcAddr();
+	if (!glfwVulkanSupported())
+		return fail_msg("graphics: Vulkan is not supported!");
 
-	if (vkGetInstanceProcAddr == NULL)
-		return fail_msg("graphics: SDL_Vulkan_GetVkGetInstanceProcAddr() failed!");
-
+	GR_VKSYM(vkAllocateCommandBuffers);
+	GR_VKSYM(vkAllocateDescriptorSets);
+	GR_VKSYM(vkAllocateMemory);
+	GR_VKSYM(vkBeginCommandBuffer);
+	GR_VKSYM(vkBindBufferMemory);
+	GR_VKSYM(vkBindImageMemory);
+	GR_VKSYM(vkCmdBeginRenderPass);
+	GR_VKSYM(vkCmdBindDescriptorSets);
+	GR_VKSYM(vkCmdBindIndexBuffer);
+	GR_VKSYM(vkCmdBindPipeline);
+	GR_VKSYM(vkCmdBindVertexBuffers);
+	GR_VKSYM(vkCmdCopyBuffer);
+	GR_VKSYM(vkCmdCopyBufferToImage);
+	GR_VKSYM(vkCmdDraw);
+	GR_VKSYM(vkCmdDrawIndexed);
+	GR_VKSYM(vkCmdEndRenderPass);
+	GR_VKSYM(vkCmdPipelineBarrier);
+	GR_VKSYM(vkCreateBuffer);
+	GR_VKSYM(vkCreateCommandPool);
+	GR_VKSYM(vkCreateDescriptorPool);
+	GR_VKSYM(vkCreateDescriptorSetLayout);
+	GR_VKSYM(vkCreateDevice);
+	GR_VKSYM(vkCreateFence);
+	GR_VKSYM(vkCreateFramebuffer);
+	GR_VKSYM(vkCreateGraphicsPipelines);
+	GR_VKSYM(vkCreateImage);
+	GR_VKSYM(vkCreateImageView);
 	GR_VKSYM(vkCreateInstance);
+	GR_VKSYM(vkCreatePipelineLayout);
+	GR_VKSYM(vkCreateRenderPass);
+	GR_VKSYM(vkCreateSampler);
+	GR_VKSYM(vkCreateSemaphore);
+	GR_VKSYM(vkCreateShaderModule);
+	GR_VKSYM(vkDestroyBuffer);
+	GR_VKSYM(vkDestroyCommandPool);
+	GR_VKSYM(vkDestroyDescriptorPool);
+	GR_VKSYM(vkDestroyDescriptorSetLayout);
+	GR_VKSYM(vkDestroyDevice);
+	GR_VKSYM(vkDestroyFence);
+	GR_VKSYM(vkDestroyFramebuffer);
+	GR_VKSYM(vkDestroyImage);
+	GR_VKSYM(vkDestroyImageView);
+	GR_VKSYM(vkDestroyInstance);
+	GR_VKSYM(vkDestroyPipeline);
+	GR_VKSYM(vkDestroyPipelineLayout);
+	GR_VKSYM(vkDestroyRenderPass);
+	GR_VKSYM(vkDestroySampler);
+	GR_VKSYM(vkDestroySemaphore);
+	GR_VKSYM(vkDestroyShaderModule);
+	GR_VKSYM(vkEndCommandBuffer);
+	GR_VKSYM(vkEnumerateDeviceExtensionProperties);
 	GR_VKSYM(vkEnumerateInstanceExtensionProperties);
+	GR_VKSYM(vkEnumeratePhysicalDevices);
+	GR_VKSYM(vkFreeMemory);
+	GR_VKSYM(vkGetBufferMemoryRequirements);
+	GR_VKSYM(vkGetDeviceQueue);
+	GR_VKSYM(vkGetImageMemoryRequirements);
+	GR_VKSYM(vkGetPhysicalDeviceFeatures);
+	GR_VKSYM(vkGetPhysicalDeviceFormatProperties);
+	GR_VKSYM(vkGetPhysicalDeviceMemoryProperties);
+	GR_VKSYM(vkGetPhysicalDeviceProperties);
+	GR_VKSYM(vkGetPhysicalDeviceQueueFamilyProperties);
+	GR_VKSYM(vkMapMemory);
+	GR_VKSYM(vkQueueSubmit);
+	GR_VKSYM(vkQueueWaitIdle);
+	GR_VKSYM(vkResetFences);
+	GR_VKSYM(vkUnmapMemory);
+	GR_VKSYM(vkUpdateDescriptorSets);
+	GR_VKSYM(vkWaitForFences);
 
-	GR_VKENUM_SDL_EXTENSIONS(sdl_ext, gfx.window);
+	uint         glfw_ext_num   = 0;
+	const char **glfw_ext_names = glfwGetRequiredInstanceExtensions(&glfw_ext_num);
 
-	if (sdl_ext_num == 0)
-		return fail_msg("graphics: SDL_Vulkan_GetInstanceExtensions() failed!");
-
-	for (int n=0; n < sdl_ext_num; n++)
-		gr_request_instance_extension(sdl_ext[n]);
+	for (int n=0; n < glfw_ext_num; n++)
+		gr_request_instance_extension(glfw_ext_names[n]);
 
 	if (gfx.var.validate->integer)
 		for (int n=0; n < countof(validation_extensions); n++)
@@ -980,70 +1044,6 @@ bool init_vulkan()
 
 	log_i("graphics: Vulkan initialized");
 
-	GR_VKSYM(vkAllocateCommandBuffers);
-	GR_VKSYM(vkAllocateDescriptorSets);
-	GR_VKSYM(vkAllocateMemory);
-	GR_VKSYM(vkBeginCommandBuffer);
-	GR_VKSYM(vkBindBufferMemory);
-	GR_VKSYM(vkBindImageMemory);
-	GR_VKSYM(vkCmdBeginRenderPass);
-	GR_VKSYM(vkCmdBindDescriptorSets);
-	GR_VKSYM(vkCmdBindPipeline);
-	GR_VKSYM(vkCmdBindIndexBuffer);
-	GR_VKSYM(vkCmdBindVertexBuffers);
-	GR_VKSYM(vkCmdCopyBuffer);
-	GR_VKSYM(vkCmdCopyBufferToImage);
-	GR_VKSYM(vkCmdDraw);
-	GR_VKSYM(vkCmdDrawIndexed);
-	GR_VKSYM(vkCmdEndRenderPass);
-	GR_VKSYM(vkCmdPipelineBarrier);
-	GR_VKSYM(vkCreateBuffer);
-	GR_VKSYM(vkCreateCommandPool);
-	GR_VKSYM(vkCreateDescriptorSetLayout);
-	GR_VKSYM(vkCreateDescriptorPool);
-	GR_VKSYM(vkCreateDevice);
-	GR_VKSYM(vkCreateFramebuffer);
-	GR_VKSYM(vkCreateGraphicsPipelines);
-	GR_VKSYM(vkCreateImage);
-	GR_VKSYM(vkCreateImageView);
-	GR_VKSYM(vkCreatePipelineLayout);
-	GR_VKSYM(vkCreateRenderPass);
-	GR_VKSYM(vkCreateSampler);
-	GR_VKSYM(vkCreateSemaphore);
-	GR_VKSYM(vkCreateShaderModule);
-	GR_VKSYM(vkDestroyBuffer);
-	GR_VKSYM(vkDestroyCommandPool);
-	GR_VKSYM(vkDestroyDescriptorSetLayout);
-	GR_VKSYM(vkDestroyDescriptorPool);
-	GR_VKSYM(vkDestroyDevice);
-	GR_VKSYM(vkDestroyFramebuffer);
-	GR_VKSYM(vkDestroyImage);
-	GR_VKSYM(vkDestroyImageView);
-	GR_VKSYM(vkDestroyInstance);
-	GR_VKSYM(vkDestroyPipeline);
-	GR_VKSYM(vkDestroyPipelineLayout);
-	GR_VKSYM(vkDestroyRenderPass);
-	GR_VKSYM(vkDestroySampler);
-	GR_VKSYM(vkDestroySemaphore);
-	GR_VKSYM(vkDestroyShaderModule);
-	GR_VKSYM(vkEndCommandBuffer);
-	GR_VKSYM(vkEnumerateDeviceExtensionProperties);
-	GR_VKSYM(vkEnumeratePhysicalDevices);
-	GR_VKSYM(vkFreeMemory);
-	GR_VKSYM(vkGetDeviceQueue);
-	GR_VKSYM(vkGetBufferMemoryRequirements);
-	GR_VKSYM(vkGetImageMemoryRequirements);
-	GR_VKSYM(vkGetPhysicalDeviceFeatures);
-	GR_VKSYM(vkGetPhysicalDeviceFormatProperties);
-	GR_VKSYM(vkGetPhysicalDeviceMemoryProperties);
-	GR_VKSYM(vkGetPhysicalDeviceProperties);
-	GR_VKSYM(vkGetPhysicalDeviceQueueFamilyProperties);
-	GR_VKSYM(vkMapMemory);
-	GR_VKSYM(vkQueueSubmit);
-	GR_VKSYM(vkQueueWaitIdle);
-	GR_VKSYM(vkUnmapMemory);
-	GR_VKSYM(vkUpdateDescriptorSets);
-
 	GR_VKSYM(vkAcquireNextImageKHR);
 	GR_VKSYM(vkCreateSwapchainKHR);
 	GR_VKSYM(vkDestroySurfaceKHR);
@@ -1070,8 +1070,8 @@ bool init_vulkan()
 
 	}
 
-	if (!SDL_Vulkan_CreateSurface(gfx.window, gfx.vk.instance, &gfx.vk.surface))
-		return fail_msg("graphics: SDL_Vulkan_CreateSurface() failed!");
+	if (glfwCreateWindowSurface(gfx.vk.instance, gfx.window, NULL, &gfx.vk.surface) != VK_SUCCESS)
+		return fail_msg("graphics: glfwCreateWindowSurface() failed!");
 
 	log_i("graphics: Rendering surface initialized");
 
@@ -1282,7 +1282,7 @@ bool init_swapchain()
 		mode = has_adaptive? VK_PRESENT_MODE_FIFO_RELAXED_KHR: VK_PRESENT_MODE_FIFO_KHR;
 
 	int w, h;
-	SDL_GetWindowSize(gfx.window, &w, &h);
+	glfwGetWindowSize(gfx.window, &w, &h);
 
 	extent.width  = clampu(w, caps.minImageExtent.width,  caps.maxImageExtent.width);
 	extent.height = clampu(h, caps.minImageExtent.height, caps.maxImageExtent.height);
@@ -1334,7 +1334,6 @@ bool init_swapchain()
 
 	vkGetSwapchainImagesKHR(gfx.vk.gpu, gfx.vk.swapchain, (uint*)&gfx.vk.swapchain_length, gfx.vk.swapchain_images);
 
-	watch("%d", gfx.vk.swapchain_length);
 
 	for (int n=0; n < gfx.vk.swapchain_length; n++) {
 
@@ -1376,7 +1375,7 @@ bool init_commandpool()
 	{
 		cpci.sType            = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
 		cpci.queueFamilyIndex = gfx.vk.graphics_queue_index;
-		cpci.flags            = 0;
+		cpci.flags            = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 
 		if (vkCreateCommandPool(gfx.vk.gpu, &cpci, NULL, &gfx.vk.command_pool) != VK_SUCCESS)
 			return fail_msg("graphics: [graphics] vkCreateCommandPool() failed!");
@@ -1394,7 +1393,7 @@ bool init_commandpool()
 	{
 		cpci.sType            = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
 		cpci.queueFamilyIndex = gfx.vk.transfer_queue_index;
-		cpci.flags            = 0;
+		cpci.flags            = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 
 		if (vkCreateCommandPool(gfx.vk.gpu, &cpci, NULL, &gfx.vk.transfer_pool) != VK_SUCCESS)
 			return fail_msg("graphics: [transfer] vkCreateCommandPool() failed!");
@@ -1420,14 +1419,21 @@ bool init_synchronization()
 {
 
 	VkSemaphoreCreateInfo sci = {};
+	VkFenceCreateInfo     fci = {};
 
 	sci.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+	fci.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+	fci.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
 	if (vkCreateSemaphore(gfx.vk.gpu, &sci, NULL, &gfx.vk.signal_image_ready) != VK_SUCCESS)
 		return fail_msg("graphics: [image] vkCreateSemaphore() failed!");
 
 	if (vkCreateSemaphore(gfx.vk.gpu, &sci, NULL, &gfx.vk.signal_render_complete) != VK_SUCCESS)
 		return fail_msg("graphics: [render] vkCreateSemaphore() failed!");
+
+	for (int n=0; n < gfx.vk.swapchain_length; n++)
+		if (vkCreateFence(gfx.vk.gpu, &fci, NULL, &gfx.vk.command_fence[n]))
+			return fail_msg("graphics: [commandbuffer] vkCreateFence() failed!");
 
 	return true;
 

@@ -28,8 +28,7 @@ extern const char         *_hades_build_user;
 static hades hades_core;
 
 
-static void process_environment();
-static void process_command_line(const dl_array *argv);
+static void report_glfw_error(int err, const char *desc);
 
 
 
@@ -38,15 +37,9 @@ const hades *hades_create(const dl_array *argv)
 
 	atexit(hades_destroy);
 
-	if (SDL_Init(SDL_INIT_EVENTS) < 0)
-		return hades_fail("SDL initialization failed: %s\n", SDL_GetError());
-/*
-SDL_INIT_AUDIO
+	glfwSetErrorCallback(&report_glfw_error);
+	glfwInit();
 
-SDL_INIT_JOYSTICK
-SDL_INIT_HAPTIC
-SDL_INIT_GAMECONTROLLER
-*/
 	hades_core.buildinfo.number    = _hades_build_number;
 	hades_core.buildinfo.revision  = _hades_build_revision;
 	hades_core.buildinfo.timestamp = _hades_build_timestamp;
@@ -70,10 +63,33 @@ SDL_INIT_GAMECONTROLLER
 	chrono_create();
 
 	if ((hades_core.gfx = gr_create()) == NULL)
-		return hades_fail("core: Failed to initialize graphics!\n%s", SDL_GetError());
+		return hades_fail("core: Failed to initialize graphics!\n");
 
-	process_environment();
-	process_command_line(argv);
+
+	for (int n=0; n < argv->num; n++) {
+
+		const dl_str *str = dl_array_at(argv, dl_str, n);
+
+		if (str->string[0] != '+')
+			continue;
+
+		const char *eq = strchr(str->string, '=');
+
+		if (eq == NULL)
+			continue;
+
+		char var[str->length + 1];
+		char val[str->length + 1];
+
+		mzero(var);
+		strncpy(var, str->string + 1, eq - str->string - 1);
+
+		mzero(val);
+		strncpy(val, eq + 1, str->length - (eq - str->string + 1));
+
+		var_set(var, val);
+
+	}
 
 	gr_set_video(hades_core.gfx);
 
@@ -92,7 +108,7 @@ void hades_destroy()
 	blob_destroy();
 	log_destroy();
 
-	SDL_Quit();
+	glfwTerminate();
 
 }
 
@@ -100,19 +116,12 @@ void hades_destroy()
 
 bool hades_update()
 {
+	hades_core.terminate = glfwWindowShouldClose(hades_core.gfx->window);
 
-	SDL_Event event;
+	if (hades_core.terminate)
+		return false;
 
-	while (SDL_PollEvent(&event)) { // Pump system events
-
-		if (event.type == SDL_QUIT) {
-
-			hades_core.terminate = true;
-			break;
-
-		}
-
-	}
+	glfwPollEvents();
 
 	chrono_update(); // Advance game time
 	// Gather inputs
@@ -126,7 +135,7 @@ bool hades_update()
 	// Update uniform buffers
 	gr_submit();  // Submit render queue to GPU
 
-	return !hades_core.terminate;
+	return true;
 
 }
 
@@ -154,7 +163,7 @@ const void *hades_fail(const char *msg, ...)
 		}
 
 		log_printf(LOG_CRITICAL, "%s", buffer);
-		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Hades Core", buffer, NULL);
+		//SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Hades Core", buffer, NULL);
 		break;
 
 	}
@@ -165,60 +174,10 @@ const void *hades_fail(const char *msg, ...)
 
 
 
-void process_environment()
+void report_glfw_error(int err, const char *desc)
 {
 
-	extern char **environ;
-
-	for (int n=0; environ[n] != NULL; n++) {
-
-		if (strncmp(environ[n], "hades_", 6))
-			continue;
-
-		char *ptr = environ[n] + 6;
-		int   len = strlen(ptr);
-		char  var[len + 1];
-
-		for (int m=0; m < len; m++)
-			var[m] = (ptr[m] == '_')? '.': ptr[m];
-
-		var[len] = '\0';
-
-		var_set(var, SDL_getenv(environ[n]));
-
-	}
-
-}
-
-
-
-void process_command_line(const dl_array *argv)
-{
-
-	for (int n=0; n < argv->num; n++) {
-
-		const dl_str *str = dl_array_at(argv, dl_str, n);
-
-		if (str->string[0] != '+')
-			continue;
-
-		const char *eq = strchr(str->string, '=');
-
-		if (eq == NULL)
-			continue;
-
-		char var[str->length + 1];
-		char val[str->length + 1];
-
-		mzero(var);
-		strncpy(var, str->string + 1, eq - str->string - 1);
-
-		mzero(val);
-		strncpy(val, eq + 1, str->length - (eq - str->string + 1));
-
-		var_set(var, val);
-
-	}
+	log_e("GLFW: %d: %s", err, desc);
 
 }
 

@@ -4,9 +4,6 @@
 [submodule "engine/libs/stb"]
 	path = engine/libs/stb
 	url = https://github.com/nothings/stb.git
-[submodule "engine/libs/SDL2"]
-	path = engine/libs/SDL2
-	url = https://github.com/spurious/SDL-mirror.git
 [submodule "engine/libs/zlib"]
 	path = engine/libs/zlib
 	url = https://github.com/madler/zlib.git
@@ -16,3 +13,6 @@
 [submodule "engine/libs/trex"]
 	path = engine/libs/trex
 	url = https://github.com/kimperator/T-Rex.git
+[submodule "engine/libs/glfw3"]
+	path = engine/libs/glfw3
+	url = https://github.com/glfw/glfw.git

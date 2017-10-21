@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
+#include <ctype.h>
 
 #include <errno.h>
 #include <fcntl.h>
@@ -20,17 +21,13 @@
 #include <sys/mman.h>
 
 #define VK_NO_PROTOTYPES
+#define GLFW_INCLUDE_VULKAN
 
-#include <vulkan/vulkan.h>
-
-#include <SDL2/SDL.h>
-#include <SDL2/SDL_vulkan.h>
+#include <GLFW/glfw3.h>
 
 #include <vectorial/simd4f.h>
 #include <vectorial/simd4x4f.h>
 
-typedef simd4f   vec4;
-typedef simd4x4f mat4;
 
 #endif
 

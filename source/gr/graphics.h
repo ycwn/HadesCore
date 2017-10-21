@@ -5,8 +5,13 @@
 
 
 #define GR_VKSYM_EXT(sym) extern PFN_##sym sym;
-#define GR_VKSYM_DEF(sym) PFN_##sym sym = NULL;
-#define GR_VKSYM(sym)     if ((sym = (PFN_##sym)vkGetInstanceProcAddr(gfx.vk.instance, #sym)) == NULL) log_d("graphics: " #sym "() == NULL!");
+#define GR_VKSYM_DEF(sym) PFN_##sym        sym = NULL;
+#define GR_VKSYM(sym)                                                                             \
+	do {                                                                                      \
+		if ((sym = (PFN_##sym)glfwGetInstanceProcAddress(gfx.vk.instance, #sym)) == NULL) \
+			log_d("graphics: " #sym "() == NULL!");                                   \
+	} while (0)
+
 
 GR_VKSYM_EXT(vkAllocateCommandBuffers);
 GR_VKSYM_EXT(vkAllocateDescriptorSets);
@@ -16,8 +21,8 @@ GR_VKSYM_EXT(vkBindBufferMemory);
 GR_VKSYM_EXT(vkBindImageMemory);
 GR_VKSYM_EXT(vkCmdBeginRenderPass);
 GR_VKSYM_EXT(vkCmdBindDescriptorSets);
-GR_VKSYM_EXT(vkCmdBindPipeline);
 GR_VKSYM_EXT(vkCmdBindIndexBuffer);
+GR_VKSYM_EXT(vkCmdBindPipeline);
 GR_VKSYM_EXT(vkCmdBindVertexBuffers);
 GR_VKSYM_EXT(vkCmdCopyBuffer);
 GR_VKSYM_EXT(vkCmdCopyBufferToImage);
@@ -27,9 +32,10 @@ GR_VKSYM_EXT(vkCmdEndRenderPass);
 GR_VKSYM_EXT(vkCmdPipelineBarrier);
 GR_VKSYM_EXT(vkCreateBuffer);
 GR_VKSYM_EXT(vkCreateCommandPool);
-GR_VKSYM_EXT(vkCreateDescriptorSetLayout);
 GR_VKSYM_EXT(vkCreateDescriptorPool);
+GR_VKSYM_EXT(vkCreateDescriptorSetLayout);
 GR_VKSYM_EXT(vkCreateDevice);
+GR_VKSYM_EXT(vkCreateFence);
 GR_VKSYM_EXT(vkCreateFramebuffer);
 GR_VKSYM_EXT(vkCreateGraphicsPipelines);
 GR_VKSYM_EXT(vkCreateImage);
@@ -42,9 +48,10 @@ GR_VKSYM_EXT(vkCreateSemaphore);
 GR_VKSYM_EXT(vkCreateShaderModule);
 GR_VKSYM_EXT(vkDestroyBuffer);
 GR_VKSYM_EXT(vkDestroyCommandPool);
-GR_VKSYM_EXT(vkDestroyDescriptorSetLayout);
 GR_VKSYM_EXT(vkDestroyDescriptorPool);
+GR_VKSYM_EXT(vkDestroyDescriptorSetLayout);
 GR_VKSYM_EXT(vkDestroyDevice);
+GR_VKSYM_EXT(vkDestroyFence);
 GR_VKSYM_EXT(vkDestroyFramebuffer);
 GR_VKSYM_EXT(vkDestroyImage);
 GR_VKSYM_EXT(vkDestroyImageView);
@@ -55,13 +62,13 @@ GR_VKSYM_EXT(vkDestroyRenderPass);
 GR_VKSYM_EXT(vkDestroySampler);
 GR_VKSYM_EXT(vkDestroySemaphore);
 GR_VKSYM_EXT(vkDestroyShaderModule);
-GR_VKSYM_EXT(vkFreeMemory);
 GR_VKSYM_EXT(vkEndCommandBuffer);
 GR_VKSYM_EXT(vkEnumerateDeviceExtensionProperties);
 GR_VKSYM_EXT(vkEnumerateInstanceExtensionProperties);
 GR_VKSYM_EXT(vkEnumeratePhysicalDevices);
-GR_VKSYM_EXT(vkGetDeviceQueue);
+GR_VKSYM_EXT(vkFreeMemory);
 GR_VKSYM_EXT(vkGetBufferMemoryRequirements);
+GR_VKSYM_EXT(vkGetDeviceQueue);
 GR_VKSYM_EXT(vkGetImageMemoryRequirements);
 GR_VKSYM_EXT(vkGetInstanceProcAddr);
 GR_VKSYM_EXT(vkGetPhysicalDeviceFeatures);
@@ -72,8 +79,10 @@ GR_VKSYM_EXT(vkGetPhysicalDeviceQueueFamilyProperties);
 GR_VKSYM_EXT(vkMapMemory);
 GR_VKSYM_EXT(vkQueueSubmit);
 GR_VKSYM_EXT(vkQueueWaitIdle);
+GR_VKSYM_EXT(vkResetFences);
 GR_VKSYM_EXT(vkUnmapMemory);
 GR_VKSYM_EXT(vkUpdateDescriptorSets);
+GR_VKSYM_EXT(vkWaitForFences);
 
 GR_VKSYM_EXT(vkAcquireNextImageKHR);
 GR_VKSYM_EXT(vkCreateSwapchainKHR);
@@ -91,7 +100,7 @@ GR_VKSYM_EXT(vkDestroyDebugReportCallbackEXT);
 
 typedef struct _graphics_t {
 
-	SDL_Window *window;
+	GLFWwindow *window;
 
 	struct {
 
@@ -159,6 +168,7 @@ typedef struct _graphics_t {
 
 		VkCommandPool   command_pool;
 		VkCommandBuffer command_buffer[GR_SWAPCHAIN_MAX];
+		VkFence         command_fence[GR_SWAPCHAIN_MAX];
 
 		VkCommandPool   transfer_pool;
 		VkCommandBuffer transfer_buffer;

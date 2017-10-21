@@ -11,7 +11,6 @@ extern(C) bool hades_update();
 void main(string[] argv)
 {
 
-	io.writeln("SEE YOU AT THE PARTY, RICHTER!");
 	hades_create(argv);
 
 	while (hades_update()) {

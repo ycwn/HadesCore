@@ -1,0 +1,32 @@
+
+######################################################
+#
+# Build a static binary of libglfw3
+#
+
+
+export lib_targets += libglfw3_build
+
+libglfw3_base = glfw3
+libglfw3_src  = $(lib_src)/$(libglfw3_base)
+libglfw3_lib  = $(lib_dst)/libglfw3.a
+libglfw3_tmp  = build/glfw3
+
+
+libglfw3_build: $(libglfw3_lib)
+	$(eval cflags += -DHAVE_GLFW3)
+	$(eval libs   += glfw3 X11 xcb Xau Xdmcp)
+
+
+$(libglfw3_lib): $(libglfw3_tgz)
+	mkdir -p $(libglfw3_tmp)/build
+	mkdir -p $(lib_dst)/include
+	cp -Rp $(CURDIR)/$(libglfw3_src)/* $(libglfw3_tmp)/build/
+	cd $(libglfw3_tmp)/build &&                                                      \
+		CC="$(cc)" CFLAGS="$(cflags)" cmake .                                    \
+			-DBUILD_SHARED_LIBS:BOOL=OFF                                     \
+			-DCMAKE_INSTALL_PREFIX:PATH=$(shell realpath $(libglfw3_tmp)) && \
+			make all install
+	@cp -Rv $(libglfw3_tmp)/include/* $(lib_dst)/include
+	@cp -Rv $(libglfw3_tmp)/lib/lib*  $(lib_dst)/
+

@@ -35,13 +35,8 @@ else
 $(error config.rules not found, run configure first)
 endif
 
-ifeq ("$(wildcard engine/arch_$(arch)/platform.rules)","")
-$(error engine/arch_$(arch)/platform.rules not found, are you sure '$(arch)' is a supported platform)
-endif
-
-
-include $(wildcard engine/build_make/*.rules)
-include $(wildcard engine/arch_$(arch)/platform.rules)
+include $(sort $(wildcard engine/build_make/*.rules))
+include $(sort $(wildcard engine/arch_$(arch)/*.rules))
 
 
 world: build autogen data platform-pre platform-build platform-pack platform-post

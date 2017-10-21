@@ -1,0 +1,23 @@
+
+######################################################
+#
+# Platform specific parts for 64-Bit GNU/Linux
+#
+
+$(info "Loading x86_64 Linux module")
+
+
+cc  = clang
+dc  = ldc2
+ld  = ldc2
+bin = build/hades
+
+cflags  = -MMD -MP -Wno-initializer-overrides -Werror=implicit-function-declaration -Werror=incompatible-pointer-types -Werror=int-conversion -Werror=format -Werror=uninitialized
+dflags  =
+ldflags =
+libs    =
+
+lib_targets =
+lib_src     = engine/libs
+lib_dst     = build/libs
+

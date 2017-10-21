@@ -18,8 +18,8 @@ struct _elements_formats_t {
 
 } formats[] = {
 
-	{ GR_V3, GR_V2, 2, GR_VERTEX, VK_FORMAT_R16G16_SINT,       4 },
-	{ GR_V3, GR_V3, 3, GR_VERTEX, VK_FORMAT_R16G16B16A16_SINT, 8 },
+	{ GR_V3, GR_V2, 2, GR_VERTEX, VK_FORMAT_R16G16_SNORM,       4 },
+	{ GR_V3, GR_V3, 3, GR_VERTEX, VK_FORMAT_R16G16B16A16_SNORM, 8 },
 
 	{ GR_T3,     0, 0, GR_TEXTURE, 0,                           0 },
 	{ GR_T3, GR_T2, 2, GR_TEXTURE, VK_FORMAT_R16G16_UINT,       4 },
@@ -37,17 +37,17 @@ struct _elements_formats_t {
 	{ GR_X4, GR_X3, 3, GR_EXTRA, VK_FORMAT_R16G16B16A16_SFLOAT, 8 },
 	{ GR_X4, GR_X4, 4, GR_EXTRA, VK_FORMAT_R16G16B16A16_SFLOAT, 8 },
 
-	{ GR_B2,     0, 0, GR_BONE0, 0,                             0 },
-	{ GR_B2, GR_B2, 4, GR_BONE0, VK_FORMAT_R16G16B16A16_SFLOAT, 8 },
+	{ GR_B2,     0, 0, GR_BONE0, 0,                           0 },
+	{ GR_B2, GR_B2, 4, GR_BONE0, VK_FORMAT_R16G16B16A16_UINT, 8 },
 
-	{ GR_B4,     0, 0, GR_BONE1, 0,                             0 },
-	{ GR_B4, GR_B4, 4, GR_BONE1, VK_FORMAT_R16G16B16A16_SFLOAT, 8 },
+	{ GR_B4,     0, 0, GR_BONE1, 0,                           0 },
+	{ GR_B4, GR_B4, 4, GR_BONE1, VK_FORMAT_R16G16B16A16_UINT, 8 },
 
-	{ GR_B6,     0, 0, GR_BONE2, 0,                             0 },
-	{ GR_B6, GR_B6, 4, GR_BONE2, VK_FORMAT_R16G16B16A16_SFLOAT, 8 },
+	{ GR_B6,     0, 0, GR_BONE2, 0,                           0 },
+	{ GR_B6, GR_B6, 4, GR_BONE2, VK_FORMAT_R16G16B16A16_UINT, 8 },
 
-	{ GR_B8,     0, 0, GR_BONE3, 0,                             0 },
-	{ GR_B8, GR_B8, 4, GR_BONE3, VK_FORMAT_R16G16B16A16_SFLOAT, 8 }
+	{ GR_B8,     0, 0, GR_BONE3, 0,                           0 },
+	{ GR_B8, GR_B8, 4, GR_BONE3, VK_FORMAT_R16G16B16A16_UINT, 8 }
 
 };
 

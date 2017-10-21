@@ -28,6 +28,10 @@ typedef float M3[9];
 typedef float M4[16];
 
 
+typedef simd4f   vec4;
+typedef simd4x4f mat4;
+
+
 static inline int   mini(int   x, int   y) { return (x < y)? x: y; }
 static inline uint  minu(uint  x, uint  y) { return (x < y)? x: y; }
 static inline float minf(float x, float y) { return (x < y)? x: y; }
