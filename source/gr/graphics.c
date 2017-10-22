@@ -284,8 +284,7 @@ bool gr_request_device_extension(const char *ext)
 
 }
 
-static gr_command      triangle;
-static gr_vertexbuffer vbo;
+
 
 bool gr_set_video()
 {
@@ -316,22 +315,6 @@ bool gr_set_video()
 
 	}
 
-	static u32 verts[] = { //RG16SN R11G11B10
- 		0xc0000000, 0x78000000,  // XY:  0.0, -0.5; RGB: 0.0, 0.0, 1.0
-		0x3fff3fff, 0x001f0000,  // XY:  0.5,  0.5; RGB: 0.0, 1.0, 0.0
-		0x3fffc000, 0x000003e0   // XY: -0.5,  0.5; RGB: 1.0, 0.0, 0.0
-
-	};
-
-	gr_command_init(&triangle, 1);
-
-	gr_vertexbuffer_init(&vbo);
-	gr_vertexbuffer_commit_vertices(&vbo, verts, sizeof(verts));
-
-	triangle.shader = gr_shader_load("shaders/triangle.a");
-	triangle.vertices = &vbo;
-	triangle.count  = 3;
-
 	log_i("graphics: Graphics initialization sequence complete");
 
 	return true;
@@ -347,9 +330,6 @@ void gr_submit()
 		gfx.vk.gpu,
 		gfx.vk.swapchain, 1000000000,
 		gfx.vk.signal_image_ready, NULL, (uint*)&gfx.vk.swapchain_curr);
-
-	if (triangle.shader != NULL)
-		gr_commandqueue_enqueue(&triangle, 1);
 
 	gr_commandqueue_consume();
 	gr_framebuffer_select();

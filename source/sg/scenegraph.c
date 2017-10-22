@@ -27,7 +27,7 @@
 
 
 static list           scenegraphs = LIST_INIT(&scenegraphs, NULL);
-static sg_scenegraph *active = NULL;
+static sg_scenegraph *active      = NULL;
 
 
 
@@ -90,6 +90,13 @@ sg_scenegraph *sg_scenegraph_find(const char *name)
 
 void sg_scenegraph_harvest()
 {
+
+	if (active == NULL)
+		return;
+
+	for (list *e=list_begin(&active->entities); e != list_end(&active->entities); e=e->next)
+		gr_commandlist_enqueue(&LIST_PTR(sg_entity,e)->cmds);
+
 }
 
 
@@ -112,7 +119,7 @@ bool sg_scenegraph_is_active(sg_scenegraph *sg)
 
 
 
-sg_scenegraph* sg_scenegraph_get_active()
+sg_scenegraph *sg_scenegraph_get_active()
 {
 
 	return active;

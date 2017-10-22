@@ -16,6 +16,7 @@
 #include "gr/graphics.h"
 
 #include "sg/transform.h"
+#include "sg/scenegraph.h"
 
 
 extern const unsigned int  _hades_build_number;
@@ -130,8 +131,8 @@ bool hades_update()
 	// Simulate AI
 	// Update animations
 	// Simulate physics
-	sg_transform_update(); // Update transform hierarchy
-	// Harvest visible objects and populate render queue
+	sg_transform_update();   // Update transform hierarchy
+	sg_scenegraph_harvest(); // Harvest visible objects and populate render queue
 	// Update uniform buffers
 	gr_submit();  // Submit render queue to GPU
 
