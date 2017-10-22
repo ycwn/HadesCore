@@ -12,8 +12,8 @@ dc  = ldc2
 ld  = ldc2
 bin = build/hades
 
-cflags  = -MMD -MP -Wno-initializer-overrides -Werror=implicit-function-declaration -Werror=incompatible-pointer-types -Werror=int-conversion -Werror=format -Werror=uninitialized
-dflags  =
+cflags  = -Iinterface/ -MMD -MP -Wno-initializer-overrides -Werror=implicit-function-declaration -Werror=incompatible-pointer-types -Werror=int-conversion -Werror=format -Werror=uninitialized
+dflags  = -Iinterface/ -Isource/game/
 ldflags =
 libs    =
 

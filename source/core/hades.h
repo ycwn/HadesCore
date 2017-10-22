@@ -31,10 +31,11 @@ typedef struct {
 } hades;
 
 
-const hades *hades_create(const dl_array *argv);
+const hades *hades_create();
 void         hades_destroy();
+void         hades_parse_commandline(const druntime_array *argv);
 bool         hades_update();
-const void  *hades_fail(const char *msg, ...);
+void         hades_fail(const char *msg, ...);
 
 
 #endif

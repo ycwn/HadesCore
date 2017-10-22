@@ -3,7 +3,6 @@
 #include "core/system.h"
 #include "core/types.h"
 #include "core/debug.h"
-#include "core/dlang.h"
 #include "core/hades.h"
 #include "core/list.h"
 #include "core/blob.h"
@@ -33,7 +32,7 @@ static void report_glfw_error(int err, const char *desc);
 
 
 
-const hades *hades_create(const dl_array *argv)
+const hades *hades_create()
 {
 
 	atexit(hades_destroy);
@@ -63,13 +62,40 @@ const hades *hades_create(const dl_array *argv)
 
 	chrono_create();
 
-	if ((hades_core.gfx = gr_create()) == NULL)
-		return hades_fail("core: Failed to initialize graphics!\n");
+	if ((hades_core.gfx = gr_create()) == NULL) {
 
+		hades_fail("core: Failed to initialize graphics!\n");
+		return NULL;
+
+	}
+
+	return &hades_core;
+
+}
+
+
+
+void hades_destroy()
+{
+
+	gr_destroy();
+
+	chrono_destroy();
+	blob_destroy();
+	log_destroy();
+
+	glfwTerminate();
+
+}
+
+
+
+void hades_parse_commandline(const druntime_array *argv)
+{
 
 	for (int n=0; n < argv->num; n++) {
 
-		const dl_str *str = dl_array_at(argv, dl_str, n);
+		const druntime_string *str = druntime_array_at(argv, druntime_string, n);
 
 		if (str->string[0] != '+')
 			continue;
@@ -91,25 +117,6 @@ const hades *hades_create(const dl_array *argv)
 		var_set(var, val);
 
 	}
-
-	gr_set_video(hades_core.gfx);
-
-	return &hades_core;
-
-}
-
-
-
-void hades_destroy()
-{
-
-	gr_destroy();
-
-	chrono_destroy();
-	blob_destroy();
-	log_destroy();
-
-	glfwTerminate();
 
 }
 
@@ -142,7 +149,7 @@ bool hades_update()
 
 
 
-const void *hades_fail(const char *msg, ...)
+void hades_fail(const char *msg, ...)
 {
 	va_list argv;
 	int     size = 1024;
@@ -168,8 +175,6 @@ const void *hades_fail(const char *msg, ...)
 		break;
 
 	}
-
-	return NULL;
 
 }
 
