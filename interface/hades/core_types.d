@@ -1,5 +1,8 @@
 
 
+import core.simd;
+
+
 alias i8  = byte;
 alias i16 = short;
 alias i32 = int;
@@ -20,8 +23,8 @@ alias V4 = float[4];
 alias M3 = float[9];
 alias M4 = float[16];
 
-alias vec4 = float[4];
-alias mat4 = float[16];
+alias vec4 = float4;
+alias mat4 = float4[4];
 
 
 int   mini(int   x, int   y) { return (x < y)? x: y; }

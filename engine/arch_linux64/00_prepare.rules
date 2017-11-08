@@ -12,9 +12,9 @@ dc  = ldc2
 ld  = ldc2
 bin = build/hades
 
-cflags  = -Iinterface/ -MMD -MP -Wno-initializer-overrides -Werror=implicit-function-declaration -Werror=incompatible-pointer-types -Werror=int-conversion -Werror=format -Werror=uninitialized
-dflags  = -Iinterface/ -Isource/game/
-ldflags =
+cflags  = -ffast-math -m64 -msse3 -Iinterface/ -MMD -MP -Wno-initializer-overrides -Werror=implicit-function-declaration -Werror=incompatible-pointer-types -Werror=int-conversion -Werror=format -Werror=uninitialized
+dflags  = -ffast-math -m64 -float-abi=hard -Iinterface/ -Isource/game/ -gc
+ldflags = -gc
 libs    =
 
 lib_targets =
