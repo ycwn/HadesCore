@@ -29,6 +29,7 @@ void log_create();
 void log_destroy();
 
 void log_printf(int level, const char *msg, ...) __attribute__((format(printf, 2, 3)));
+void log_hexdump(int level, const void *buf, size_t len);
 
 int log_get_slot();
 

@@ -177,6 +177,51 @@ void log_printf(int level, const char *msg, ...)
 
 
 
+void log_hexdump(int level, const void *buf, size_t len)
+{
+
+	static const int stride = 16;
+	char cv[stride + 1];
+	char hv[3 * stride + 1];
+
+	const void *addr = buf;
+	const u8   *ptr  = buf;
+
+	memset(cv, ' ', sizeof(cv));
+	memset(hv, ' ', sizeof(hv));
+
+	cv[stride] = 0;
+	hv[3 * stride] = 0;
+
+	for (int n=0, m=0; n < len; n++) {
+
+		cv[m] = isprint(*ptr)? *ptr: '.';
+		sprintf(&hv[3 * m], " %02x", *ptr);
+
+		ptr++;
+		m++;
+
+		if (n > 0 && (m == stride || n == len - 1)) {
+
+			log_printf(level, "%p |%s | %s", addr, hv, cv);
+
+			memset(cv, ' ', sizeof(cv));
+			memset(hv, ' ', sizeof(hv));
+
+			cv[stride] = 0;
+			hv[3 * stride] = 0;
+
+			addr += stride;
+			m     = 0;
+
+		}
+
+	}
+
+}
+
+
+
 int log_get_slot()
 {
 
