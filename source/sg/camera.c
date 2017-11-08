@@ -119,10 +119,10 @@ void sg_camera_ortho(sg_camera *c, float width, float height, float near, float 
 	const float depth_b = (near + far) / (near - far);
 
 	c->projection = simd4x4f_create(
-			simd4f_create(field_w,    0.0f,    0.0f, 0.0f),
-			simd4f_create(0.0f,    field_h,    0.0f, 0.0f),
-			simd4f_create(0.0f,       0.0f, depth_a, 0.0f),
-			simd4f_create(0.0f,       0.0f, depth_b, 1.0f));
+		simd4f_create(field_w,     0.0f,    0.0f, 0.0f),
+		simd4f_create(0.0f,    -field_h,    0.0f, 0.0f),
+		simd4f_create(0.0f,        0.0f, depth_a, 0.0f),
+		simd4f_create(0.0f,        0.0f, depth_b, 1.0f));
 
 }
 
@@ -136,10 +136,10 @@ void sg_camera_perspective(sg_camera *c, float fov, float near, float far)
 	const float depth_b = 2.0f * near * far / (near - far);
 
 	c->projection = simd4x4f_create(
-			simd4f_create(field,   0.0f,    0.0f,  0.0f),
-			simd4f_create(0.0f,    field,   0.0f,  0.0f),
-			simd4f_create(0.0f,    0.0f, depth_a, -1.0f),
-			simd4f_create(0.0f,    0.0f, depth_b,  1.0f));
+		simd4f_create(field,  0.0f,    0.0f,  0.0f),
+		simd4f_create(0.0f,  -field,   0.0f,  0.0f),
+		simd4f_create(0.0f,   0.0f, depth_a, -1.0f),
+		simd4f_create(0.0f,   0.0f, depth_b,  1.0f));
 
 }
 
