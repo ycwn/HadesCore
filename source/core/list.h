@@ -41,7 +41,7 @@ static inline list   *list_rbegin(   list *self)             { return self->prev
 static inline list   *list_rend(     list *self)             { return self; }
 static inline void   *list_front(    list *self)             { return list_begin( self)->ptr; }
 static inline void   *list_back(     list *self)             { return list_rbegin(self)->ptr; }
-static inline bool    list_empty(    list *self)             { return self->prev == self->next; }
+static inline bool    list_empty(    list *self)             { return self->prev == self; }
 static inline bool    list_connected(list *self)             { return self->next != self; }
 static inline size_t  list_size(     list *self)             { return _list_count(self); }
 
