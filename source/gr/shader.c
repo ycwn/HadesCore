@@ -14,6 +14,7 @@
 #include "gr/graphics.h"
 #include "gr/rendertarget.h"
 #include "gr/vertexformat.h"
+#include "gr/uniformbuffer.h"
 #include "gr/shader.h"
 
 
@@ -113,6 +114,8 @@ gr_shader *gr_shader_new(const char *name)
 {
 
 	gr_shader *s = malloc(sizeof(gr_shader) + strlen(name) + 1);
+
+	gr_uniformbuffer_init(&s->ub);
 
 	strcpy((char*)s->name, name);
 	reset(s);
@@ -217,6 +220,17 @@ gr_shader *gr_shader_load(const char *file)
 
 	}
 
+	gpu_uniform_shader ubs;
+
+	ubs.screen = simd4f_create(
+		rt->width, rt->height,
+		(float)rt->width  / (float)rt->height,
+		(float)rt->height / (float)rt->width);
+
+	memcpy(&ubs.arg, s->args, sizeof(ubs.arg));
+
+	gr_uniformbuffer_commit(&s->ub, &ubs, sizeof(ubs));
+
 	log_i("shader: Done");
 	return s;
 
@@ -231,6 +245,7 @@ void gr_shader_del(gr_shader *s)
 		return;
 
 	list_remove(&s->node);
+	gr_uniformbuffer_del(&s->ub);
 
 	destroy(s);
 	free(s);
@@ -265,6 +280,8 @@ void reset(gr_shader *s)
 	s->geometry = NULL;
 	s->fragment = NULL;
 	s->compute  = NULL;
+
+	mzero(s->args);
 
 }
 

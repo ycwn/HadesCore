@@ -6,7 +6,9 @@
 
 typedef struct sg_entity {
 
-	gr_commandlist cmds;
+	gr_commandlist   cmds;
+	gr_vertexbuffer  vbo;
+	gr_uniformbuffer ubo;
 
 	sg_transform  *transform;
 	sg_scenegraph *scenegraph;
@@ -14,12 +16,15 @@ typedef struct sg_entity {
 	list node;
 	list node_sg;
 
-	char name[];
+	bool recalculate;
+
+	char *name;
+	u8    extra[];
 
 } sg_entity;
 
 
-sg_entity *sg_entity_new(const char *name);
+sg_entity *sg_entity_new(const char *name, size_t extra);
 void       sg_entity_del(sg_entity *e);
 
 sg_entity *sg_entity_find(const char *name);

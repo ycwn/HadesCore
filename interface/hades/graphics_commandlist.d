@@ -12,8 +12,6 @@ alias gr_texturearray = void; //FIXME: Not implemented
 
 struct gr_commandlist {
 
-	mat4 modelview;
-
 	gr_vertexbuffer  *vertices;
 	gr_uniformbuffer *uniforms;
 	gr_texturearray  *textures;

@@ -11,9 +11,9 @@
 #include "gr/graphics.h"
 #include "gr/rendertarget.h"
 #include "gr/vertexformat.h"
-#include "gr/shader.h"
 #include "gr/vertexbuffer.h"
 #include "gr/uniformbuffer.h"
+#include "gr/shader.h"
 #include "gr/command.h"
 
 
@@ -49,8 +49,6 @@ void gr_command_init(gr_command *cmds, uint num)
 		cmds[n].vertices = NULL;
 		cmds[n].uniforms = NULL;
 		cmds[n].textures = NULL;
-
-		cmds[n].model = NULL;
 
 		cmds[n].state = GR_COMMAND_STATE_INACTIVE;
 		cmds[n].index = -1;

@@ -12,9 +12,9 @@
 #include "gr/graphics.h"
 #include "gr/rendertarget.h"
 #include "gr/vertexformat.h"
-#include "gr/shader.h"
 #include "gr/vertexbuffer.h"
 #include "gr/uniformbuffer.h"
+#include "gr/shader.h"
 #include "gr/command.h"
 #include "gr/commandqueue.h"
 #include "gr/commandlist.h"
@@ -91,11 +91,94 @@ sg_scenegraph *sg_scenegraph_find(const char *name)
 void sg_scenegraph_harvest()
 {
 
+	mat4 eye;
+	mat4 view;
+	mat4 proj;
+	mat4 view_proj;
+	mat4 identity;
+	bool eye_modified = false;
+
 	if (active == NULL)
 		return;
 
-	for (list *e=list_begin(&active->entities); e != list_end(&active->entities); e=e->next)
-		gr_commandlist_enqueue(&LIST_PTR(sg_entity,e)->cmds);
+	simd4x4f_identity(&identity);
+
+	if (active->camera_active != NULL) {
+
+		if (active->camera_active->transform != NULL) {
+
+			sg_transform *xf = active->camera_active->transform;
+
+			eye = xf->model;
+
+			view = eye;
+			view.w = simd4f_splat(0.0f);
+
+			simd4x4f_transpose_inplace(&view);
+			simd4x4f_matrix_vector3_mul(&view, &eye.w, &view.w);
+			view.w = simd4f_sub(simd4f_create(0.0f, 0.0f, 0.0f, 1.0f), view.w);
+
+			eye_modified = sg_transform_is_modified(xf);
+
+		} else {
+
+			simd4x4f_identity(&eye);
+			simd4x4f_identity(&view);
+
+		}
+
+		proj = active->camera_active->projection;
+
+	} else {
+
+		simd4x4f_identity(&eye);
+		simd4x4f_identity(&view);
+		simd4x4f_identity(&proj);
+
+	}
+
+	simd4x4f_matrix_mul(&view, &proj, &view_proj);
+
+
+	for (list *e=list_begin(&active->entities); e != list_end(&active->entities); e=e->next) {
+
+		sg_entity *ent = LIST_PTR(sg_entity,e);
+
+		mat4 *model    = &identity;
+		bool  modified = ent->recalculate || eye_modified;
+
+		if (ent->transform != NULL) {
+
+			model     = &ent->transform->model;
+			modified |= sg_transform_is_modified(ent->transform);
+
+		}
+
+		if (modified) {
+
+			gpu_uniform_object u;
+
+			szero(u);
+
+			u.mat_model  = *model;
+			u.mat_normal = *model;
+			u.mat_view   = view;
+			u.mat_proj   = proj;
+			u.mat_eye    = eye;
+			u.mat_viewproj = view_proj;
+
+			simd4x4f_matrix_mul(model, &view,      &u.mat_modelview);
+			simd4x4f_matrix_mul(model, &view_proj, &u.mat_mvp);
+
+			gr_uniformbuffer_commit(&ent->ubo, &u, sizeof(u));
+
+			ent->recalculate = false;
+
+		}
+
+		gr_commandlist_enqueue(&ent->cmds);
+
+	}
 
 }
 

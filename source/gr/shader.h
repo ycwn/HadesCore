@@ -6,8 +6,9 @@
 
 typedef struct _gr_shader_t {
 
-	gr_vertexformat  vf;
-	gr_rendertarget *rt;
+	gr_vertexformat   vf;
+	gr_rendertarget  *rt;
+	gr_uniformbuffer  ub;
 
 	int stage;
 
@@ -19,6 +20,8 @@ typedef struct _gr_shader_t {
 	VkShaderModule geometry;
 	VkShaderModule fragment;
 	VkShaderModule compute;
+
+	V4 args[GPU_SHADER_ARGUMENTS];
 
 	list       node;
 	const char name[];

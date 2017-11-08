@@ -21,8 +21,6 @@ struct gr_command {
 	gr_uniformbuffer *uniforms;
 	void             *textures;
 
-	mat4 *model;
-
 	int state;
 	int index;
 	int start;

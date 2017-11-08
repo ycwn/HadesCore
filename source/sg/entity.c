@@ -12,9 +12,9 @@
 #include "gr/graphics.h"
 #include "gr/rendertarget.h"
 #include "gr/vertexformat.h"
-#include "gr/shader.h"
 #include "gr/vertexbuffer.h"
 #include "gr/uniformbuffer.h"
+#include "gr/shader.h"
 #include "gr/command.h"
 #include "gr/commandqueue.h"
 #include "gr/commandlist.h"
@@ -28,18 +28,26 @@ static list entities = LIST_INIT(&entities, NULL);
 
 
 
-sg_entity *sg_entity_new(const char *name)
+sg_entity *sg_entity_new(const char *name, size_t extra)
 {
 
-	sg_entity *e = aligned_alloc(16, sizeof(sg_entity) + strlen(name) + 1);
+	sg_entity *e = aligned_alloc(16, sizeof(sg_entity) + extra + strlen(name) + 1);
 
 	gr_commandlist_init(&e->cmds);
+	gr_vertexbuffer_init(&e->vbo);
+	gr_uniformbuffer_init(&e->ubo);
+
+	e->cmds.vertices = &e->vbo;
+	e->cmds.uniforms = &e->ubo;
 
 	e->transform  = NULL;
 	e->scenegraph = NULL;
+	e->name       = (char*)&e->extra[0] + extra;
 
 	list_init(&e->node,    e);
 	list_init(&e->node_sg, e);
+
+	e->recalculate = false;
 
 	strcpy(e->name, name);
 
@@ -55,6 +63,9 @@ void sg_entity_del(sg_entity *e)
 {
 
 	gr_commandlist_del(&e->cmds);
+	gr_vertexbuffer_del(&e->vbo);
+	gr_uniformbuffer_del(&e->ubo);
+
 	sg_entity_detach(e);
 
 	list_remove(&e->node);

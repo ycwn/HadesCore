@@ -49,5 +49,10 @@ static inline float clampf(float x, float min, float max) { return minf(maxf(x, 
 #define mzero(x)   memset((x),  0, sizeof(x))
 #define szero(x)   memset(&(x), 0, sizeof(x))
 
+
+#include "druntime.h"
+#include "gpuio.h"
+
+
 #endif
 

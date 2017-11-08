@@ -12,9 +12,9 @@
 #include "gr/graphics.h"
 #include "gr/rendertarget.h"
 #include "gr/vertexformat.h"
-#include "gr/shader.h"
 #include "gr/vertexbuffer.h"
 #include "gr/uniformbuffer.h"
+#include "gr/shader.h"
 #include "gr/command.h"
 #include "gr/commandqueue.h"
 

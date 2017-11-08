@@ -12,9 +12,9 @@
 #include "gr/graphics.h"
 #include "gr/rendertarget.h"
 #include "gr/vertexformat.h"
-#include "gr/shader.h"
 #include "gr/vertexbuffer.h"
 #include "gr/uniformbuffer.h"
+#include "gr/shader.h"
 #include "gr/command.h"
 #include "gr/commandqueue.h"
 #include "gr/commandlist.h"
@@ -37,18 +37,14 @@ static const u32 verts[] = { //RG16SN R11G11B10
 sg_triangle *sg_triangle_new(const char *name)
 {
 
-	sg_triangle *t = malloc(sizeof(sg_triangle));
+	sg_triangle *t = (sg_triangle*)sg_entity_new(name, sizeof(sg_triangle) - sizeof(sg_entity));
 
-	t->entity = sg_entity_new(name);
+	gr_vertexbuffer_commit_vertices(&t->entity.vbo, verts, sizeof(verts));
 
-	gr_vertexbuffer_init(&t->vbo);
-	gr_vertexbuffer_commit_vertices(&t->vbo, verts, sizeof(verts));
+	gr_command *triangle = gr_commandlist_append(&t->entity.cmds, NULL, 1, true);
 
-	gr_command *triangle = gr_commandlist_append(&t->entity->cmds, NULL, 1, true);
-
-	triangle->shader   = gr_shader_load("shaders/triangle.a");
-	triangle->vertices = &t->vbo;
-	triangle->count    = 3;
+	triangle->shader = gr_shader_load("shaders/triangle.a");
+	triangle->count  = 3;
 
 	return t;
 
@@ -59,10 +55,7 @@ sg_triangle *sg_triangle_new(const char *name)
 void sg_triangle_del(sg_triangle *t)
 {
 
-	sg_entity_del(t->entity);
-	gr_vertexbuffer_del(&t->vbo);
-
-	free(t);
+	sg_entity_del(&t->entity);
 
 }
 

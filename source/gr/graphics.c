@@ -14,10 +14,10 @@
 #include "gr/pixelformat.h"
 #include "gr/framebuffer.h"
 #include "gr/rendertarget.h"
-#include "gr/shader.h"
 #include "gr/texture.h"
 #include "gr/vertexbuffer.h"
 #include "gr/uniformbuffer.h"
+#include "gr/shader.h"
 #include "gr/command.h"
 #include "gr/commandqueue.h"
 
@@ -211,6 +211,7 @@ graphics *gr_create()
 	gr_command_create();
 	gr_commandqueue_create();
 	gr_vertexbuffer_create(&gfx);
+	gr_uniformbuffer_create(&gfx);
 
 	for (int n=0; n < countof(instance_extensions); n++)
 		gr_request_instance_extension(instance_extensions[n]);
@@ -227,6 +228,7 @@ graphics *gr_create()
 void gr_destroy()
 {
 
+	gr_uniformbuffer_destroy();
 	gr_vertexbuffer_destroy();
 	gr_commandqueue_destroy();
 	gr_command_destroy();
@@ -414,6 +416,7 @@ void gr_submit()
 //			curr_tex = cmd->t;
 
 			const VkDescriptorSet descriptors[]={
+				curr_shader->ub.descriptor,
 				curr_ubo->descriptor
 //				curr_tex->get_descriptor()
 			};
@@ -1490,6 +1493,8 @@ bool init_descriptors()
 	}
 
 	const VkDescriptorSetLayout descriptors[] = {
+		//gfx.vk.descriptor_uniform_layout,
+		gfx.vk.descriptor_uniform_layout,
 		gfx.vk.descriptor_uniform_layout,
 		gfx.vk.descriptor_texture_layout
 	};

@@ -95,7 +95,7 @@ $(scripts): $(data)/%: ../%
 # Compile shaders
 #
 $(shaders): $(data)/%.a: ../%.shader
-	$(sc) -I../shaders/sys -K -o $@ $<
+	$(sc) -I../shaders/sys -I../interface -K -o $@ $<
 
 
 #

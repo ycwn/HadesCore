@@ -28,8 +28,6 @@
 #include <vectorial/simd4f.h>
 #include <vectorial/simd4x4f.h>
 
-#include "druntime.h"
-
 
 #endif
 

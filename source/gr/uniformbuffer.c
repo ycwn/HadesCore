@@ -95,7 +95,7 @@ bool gr_uniformbuffer_commit(gr_uniformbuffer *ub, const void *buf, size_t len)
 
 		if (!gr_create_buffer(
 				&ub->buffer,  &ub->memory,
-				ub->capacity, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+				ub->capacity, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
 				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT))
 			return false;
 

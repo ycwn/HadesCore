@@ -19,8 +19,6 @@ typedef struct _gr_command_t {
 	gr_uniformbuffer *uniforms;
 	gr_texturearray  *textures;
 
-	mat4 *model;
-
 	int state;
 	int index;
 	int start;

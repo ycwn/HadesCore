@@ -12,9 +12,9 @@
 #include "gr/graphics.h"
 #include "gr/rendertarget.h"
 #include "gr/vertexformat.h"
-#include "gr/shader.h"
 #include "gr/vertexbuffer.h"
 #include "gr/uniformbuffer.h"
+#include "gr/shader.h"
 #include "gr/command.h"
 #include "gr/commandqueue.h"
 #include "gr/commandlist.h"
@@ -28,8 +28,6 @@ static gr_vertexbuffer  guard_vertices = { 0 };
 
 void gr_commandlist_init(gr_commandlist *cmdl)
 {
-
-	simd4x4f_identity(&cmdl->modelview);
 
 	cmdl->vertices = &guard_vertices;
 	cmdl->uniforms = NULL;//&guard_uniforms; //FIXME: No uniform buffers!
@@ -176,7 +174,6 @@ gr_command *gr_commandlist_append(gr_commandlist *cmdl, gr_shader *s, uint num, 
 		cmd[n].vertices = cmdl->vertices;
 		cmd[n].uniforms = cmdl->uniforms;
 		cmd[n].textures = cmdl->textures;
-		cmd[n].model    = &cmdl->modelview;
 
 	}
 
