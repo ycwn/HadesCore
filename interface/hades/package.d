@@ -33,7 +33,6 @@ public {
 	import hades.scenegraph_light;
 	import hades.scenegraph_scenegraph;
 	import hades.scenegraph_transform;
-	import hades.scenegraph_triangle;
 	import hades.scenegraph_cube;
 
 }
