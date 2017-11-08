@@ -141,6 +141,7 @@ bool hades_update()
 	sg_transform_update();   // Update transform hierarchy
 	sg_scenegraph_harvest(); // Harvest visible objects and populate render queue
 	// Update uniform buffers
+	//sg_transform_clear();    // Purge modified transforms
 	gr_submit();  // Submit render queue to GPU
 
 	return true;

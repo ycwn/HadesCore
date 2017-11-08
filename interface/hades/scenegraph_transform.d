@@ -18,6 +18,7 @@ extern(C) {
 
 	sg_transform *sg_transform_find(const char *name);
 	void          sg_transform_update();
+	void          sg_transform_clear();
 
 	void sg_transform_attach(sg_transform *xf, sg_transform *parent);
 	void sg_transform_detach(sg_transform *xf);

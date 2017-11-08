@@ -236,7 +236,7 @@ void sg_transform_rotate_quaternion(sg_transform *_xf, const vec4 quaternion)
 	xf->modified   = true;
 
 	if (!list_connected(&xf->node_queue))
-		list_append(&xf->node_queue, &queue);
+		list_append(&queue, &xf->node_queue);
 
 }
 
@@ -251,7 +251,7 @@ void sg_transform_rotate_matrix(sg_transform *_xf, const mat4 *matrix)
 	xf->modified = true;
 
 	if (!list_connected(&xf->node_queue))
-		list_append(&xf->node_queue, &queue);
+		list_append(&queue, &xf->node_queue);
 
 }
 
@@ -266,7 +266,7 @@ void sg_transform_translate(sg_transform *_xf, const vec4 translation)
 	xf->modified    = true;
 
 	if (!list_connected(&xf->node_queue))
-		list_append(&xf->node_queue, &queue);
+		list_append(&queue, &xf->node_queue);
 
 }
 
@@ -281,7 +281,7 @@ void sg_transform_scale(sg_transform *_xf, const float scale)
 	xf->modified = true;
 
 	if (!list_connected(&xf->node_queue))
-		list_append(&xf->node_queue, &queue);
+		list_append(&queue, &xf->node_queue);
 
 }
 
@@ -295,7 +295,7 @@ void sg_transform_modify(sg_transform *_xf)
 	xf->modified = true;
 
 	if (!list_connected(&xf->node_queue))
-		list_append(&xf->node_queue, &queue);
+		list_append(&queue, &xf->node_queue);
 
 }
 
