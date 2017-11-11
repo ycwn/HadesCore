@@ -4,7 +4,6 @@
 #include "core/types.h"
 #include "core/debug.h"
 #include "core/list.h"
-#include "core/string.h"
 #include "core/variable.h"
 
 #include "gr/limits.h"

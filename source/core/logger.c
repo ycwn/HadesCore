@@ -5,7 +5,6 @@
 #include "core/hades.h"
 #include "core/list.h"
 #include "core/logger.h"
-#include "core/string.h"
 #include "core/variable.h"
 
 

@@ -5,7 +5,6 @@
 #include "core/debug.h"
 #include "core/list.h"
 #include "core/logger.h"
-#include "core/string.h"
 #include "core/variable.h"
 
 #include "gr/limits.h"
@@ -187,13 +186,13 @@ static inline bool fail_msg(const char *msg) {
 graphics *gr_create()
 {
 
-	gfx.var.screen_width      = var_new("gr.screen.width",   "1024");
-	gfx.var.screen_height     = var_new("gr.screen.height",   "576");
-	gfx.var.screen_fullscreen = var_new("gr.screen.full",       "0");
-	gfx.var.vsync_enable      = var_new("gr.vsync.enable",      "1");
-	gfx.var.vsync_adaptive    = var_new("gr.vsync.adaptive",    "1");
-	gfx.var.triple_buffer     = var_new("gr.tribuffer",         "0");
-	gfx.var.validate          = var_new("gr.validate",          "0");
+	gfx.var.screen_width      = var_new_int("gr.screen.width",   "1024");
+	gfx.var.screen_height     = var_new_int("gr.screen.height",   "576");
+	gfx.var.screen_fullscreen = var_new_int("gr.screen.full",       "0");
+	gfx.var.vsync_enable      = var_new_int("gr.vsync.enable",      "1");
+	gfx.var.vsync_adaptive    = var_new_int("gr.vsync.adaptive",    "1");
+	gfx.var.triple_buffer     = var_new_int("gr.tribuffer",         "0");
+	gfx.var.validate          = var_new_int("gr.validate",          "0");
 
 	gfx.ext.instance_num = 0;
 	gfx.ext.device_num   = 0;
@@ -297,9 +296,9 @@ bool gr_set_video()
 	glfwWindowHint(GLFW_RESIZABLE,  GLFW_FALSE);
 
 	gfx.window = glfwCreateWindow(
-			gfx.var.screen_width->integer, gfx.var.screen_height->integer,
+			*gfx.var.screen_width, *gfx.var.screen_height,
 			"Hades Core",
-			gfx.var.screen_fullscreen->integer? glfwGetPrimaryMonitor(): NULL, NULL);
+			*gfx.var.screen_fullscreen? glfwGetPrimaryMonitor(): NULL, NULL);
 
 	watch("%p", gfx.window);
 
@@ -1001,7 +1000,7 @@ bool init_vulkan()
 	for (int n=0; n < glfw_ext_num; n++)
 		gr_request_instance_extension(glfw_ext_names[n]);
 
-	if (gfx.var.validate->integer)
+	if (*gfx.var.validate)
 		for (int n=0; n < countof(validation_extensions); n++)
 			gr_request_instance_extension(validation_extensions[n]);
 
@@ -1019,8 +1018,8 @@ bool init_vulkan()
 	vkici.pApplicationInfo        = &vkai;
 	vkici.enabledExtensionCount   = gfx.ext.instance_num;
 	vkici.ppEnabledExtensionNames = gfx.ext.instance;
-	vkici.enabledLayerCount       = gfx.var.validate->integer? countof(validation_layers): 0;
-	vkici.ppEnabledLayerNames     = gfx.var.validate->integer? validation_layers: NULL;
+	vkici.enabledLayerCount       = *gfx.var.validate? countof(validation_layers): 0;
+	vkici.ppEnabledLayerNames     = *gfx.var.validate? validation_layers: NULL;
 
 	if (vkCreateInstance(&vkici, NULL, &gfx.vk.instance) != VK_SUCCESS)
 		return fail_msg("graphics: vkCreateInstance() failed!");
@@ -1040,7 +1039,7 @@ bool init_vulkan()
 	GR_VKSYM(vkCreateDebugReportCallbackEXT);
 	GR_VKSYM(vkDestroyDebugReportCallbackEXT);
 
-	if (gfx.var.validate->integer) {
+	if (*gfx.var.validate) {
 
 		VkDebugReportCallbackCreateInfoEXT vkdrcci = {};
 
@@ -1257,11 +1256,11 @@ bool init_swapchain()
 
 	}
 
-	if (!gfx.var.vsync_enable->integer)
+	if (!*gfx.var.vsync_enable)
 		mode =  has_immediate? VK_PRESENT_MODE_IMMEDIATE_KHR:
 			has_adaptive?  VK_PRESENT_MODE_FIFO_RELAXED_KHR: VK_PRESENT_MODE_FIFO_KHR;
 
-	else if (gfx.var.vsync_adaptive->integer)
+	else if (*gfx.var.vsync_adaptive)
 		mode = has_adaptive? VK_PRESENT_MODE_FIFO_RELAXED_KHR: VK_PRESENT_MODE_FIFO_KHR;
 
 	int w, h;
@@ -1270,7 +1269,7 @@ bool init_swapchain()
 	extent.width  = clampu(w, caps.minImageExtent.width,  caps.maxImageExtent.width);
 	extent.height = clampu(h, caps.minImageExtent.height, caps.maxImageExtent.height);
 
-	gfx.vk.swapchain_length = gfx.var.triple_buffer->integer? 3: 2;
+	gfx.vk.swapchain_length = *gfx.var.triple_buffer? 3: 2;
 
 	if (gfx.vk.swapchain_length > caps.maxImageCount)
 		gfx.vk.swapchain_length = caps.maxImageCount;

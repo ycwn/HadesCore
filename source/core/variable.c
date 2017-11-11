@@ -5,63 +5,161 @@
 #include "core/debug.h"
 #include "core/list.h"
 #include "core/logger.h"
-#include "core/string.h"
 #include "core/variable.h"
 
 
-typedef struct _variable_node_t {
+#define VARPTR(self) ((varnode*)(((const u8*)self) - offsetof(varnode, payload)))
 
-	variable  var;
-	list      node;
 
-	const char *name;
+typedef struct varnode {
 
-	void           *cb_data;
-	_variable_cb_t  cb_func;
+	const char    *name;
+	const vartype *vtbl;
 
-} variable_node;
+	void          *cb_data;
+	variable_cb_t  cb_func;
+
+	list node;
+	u8   payload[];
+
+} varnode;
+
+
+typedef struct varstr {
+
+	char   *str;
+	size_t  capacity;
+
+} varstr;
+
+
+static const char *var_i_get(int *var);
+static void        var_i_set(int *var, const char *str);
+
+static const char *var_f_get(float *var);
+static void        var_f_set(float *var, const char *str);
+
+static void        var_s_new(varstr *var);
+static void        var_s_del(varstr *var);
+static const char *var_s_get(varstr *var);
+static void        var_s_set(varstr *var, const char *str);
 
 
 static list vars = LIST_INIT(&vars, NULL);
 
+static VARTYPE(vtbl_i, "integer", int,    NULL,       NULL,       &var_i_get, &var_i_set);
+static VARTYPE(vtbl_f, "float",   float,  NULL,       NULL,       &var_f_get, &var_f_set);
+static VARTYPE(vtbl_s, "string",  varstr, &var_s_new, &var_s_del, &var_s_get, &var_s_set);
 
 
-variable *var_new(const char *name, const char *def)
+
+variable *var_new(const char *name, const vartype *vtbl, const char *def)
 {
 
-	if (name == NULL || *name == '\0')
+	if (name == NULL || vtbl == NULL || *name == '\0')
 		return NULL;
 
-	variable_node *self = malloc(sizeof(variable_node));
+	varnode  *self = malloc(sizeof(varnode) + vtbl->size + strlen(name) + 1);
+	variable *var  = &self->payload;
 
-	str_new(&self->var.text);
+	self->name = (const char*)&self->payload[vtbl->size];
+	self->vtbl = vtbl;
 
-	self->var.integer = 0;
-	self->var.real    = 0.0f;
-	self->name        = name;
-	self->cb_data     = NULL;
-	self->cb_func     = NULL;
+	self->cb_data = NULL;
+	self->cb_func = NULL;
+
+	strcpy((char*)self->name, name);
 
 	list_init(&self->node, self);
 	list_append(&vars, &self->node);
 
-	if (def != NULL && *def != '\0')
-		var_set_s(&self->var, def);
+	if (vtbl->var_new != NULL)
+		vtbl->var_new(var);
 
-	return &self->var;
+	if (def != NULL && *def != '\0')
+		var_set(var, def);
+
+	return var;
 
 }
 
 
 
-void var_del(variable *_self)
+void var_del(variable *var)
 {
 
-	variable_node *self = (variable_node*)_self;
+	varnode *self = VARPTR(var);
+
+	if (self->vtbl->var_del != NULL)
+		self->vtbl->var_del(var);
 
 	list_remove(&self->node);
-	str_del(&self->var.text);
 	free(self);
+
+}
+
+
+
+const char *var_type(const variable *var)
+{
+
+	return VARPTR(var)->vtbl->type;
+
+}
+
+
+
+const vartype *var_vt(const variable *var)
+{
+
+ 	return VARPTR(var)->vtbl;
+
+}
+
+
+
+const char *var_name(const variable *var)
+{
+
+	return VARPTR(var)->name;
+
+}
+
+
+
+const char *var_get(variable *var)
+{
+
+	varnode *self = VARPTR(var);
+
+	if (self->vtbl->var_get != NULL)
+		return self->vtbl->var_get(var);
+
+	return NULL;
+
+}
+
+
+
+void var_set(variable *var, const char *str)
+{
+
+	varnode *self = VARPTR(var);
+
+	if (self->vtbl->var_set != NULL)
+		self->vtbl->var_set(var, str);
+
+}
+
+
+
+void var_set_cb(variable *var, variable_cb_t func, void *data)
+{
+
+	varnode *self = VARPTR(var);
+
+	self->cb_func = func;
+	self->cb_data = data;
 
 }
 
@@ -71,8 +169,8 @@ variable *var_find(const char *name)
 {
 
 	for (list *var=list_begin(&vars); var != list_end(&vars); var=var->next)
-		if (!strcmp(LIST_PTR(variable_node, var)->name, name))
-			return var->ptr;
+		if (!strcmp(LIST_PTR(varnode, var)->name, name))
+			return &LIST_PTR(varnode, var)->payload;
 
 	return NULL;
 
@@ -80,7 +178,7 @@ variable *var_find(const char *name)
 
 
 
-variable *var_set(const char *name, const char *value)
+variable *var_nget(const char *name, const char **buf)
 {
 
 	variable *var = var_find(name);
@@ -88,9 +186,8 @@ variable *var_set(const char *name, const char *value)
 	if (var == NULL)
 		return NULL;
 
-	var_set_s(var, value);
-
-	log_i("var: Set '%s' to '%s'", name, value);
+	if (buf != NULL)
+		*buf = var_get(var);
 
 	return var;
 
@@ -98,85 +195,135 @@ variable *var_set(const char *name, const char *value)
 
 
 
-void var_set_s(variable *_self, const char *value)
+variable *var_nset(const char *name, const char *str)
 {
 
-	if (_self == NULL || value == NULL)
-		return;
+	variable *var = var_find(name);
 
-	variable_node *self = (variable_node*)_self;
+	if (var == NULL)
+		return NULL;
 
-	str_dup(&self->var.text, value);
+	if (str != NULL) {
 
-	self->var.real    = atof(value);
-	self->var.integer = atoi(value);
+		var_set(var, str);
+		log_i("var: Set '%s' to '%s'", name, str);
 
-	if (self->cb_func != NULL)
-		(self->cb_func)(self->cb_data, &self->var);
+	}
+
+	return var;
 
 }
 
 
 
-void var_set_f(variable *_self, float value)
+int *var_new_int(const char *name, const char *def)
 {
 
-	if (_self == NULL)
-		return;
-
-	variable_node *self = (variable_node*)_self;
-
-	str_printf(&self->var.text, "%f", value);
-
-	self->var.real    = value;
-	self->var.integer = (int)value;
-
-	if (self->cb_func != NULL)
-		(self->cb_func)(self->cb_data, &self->var);
+	return var_new(name, &vtbl_i, def);
 
 }
 
 
 
-void var_set_i(variable *_self, int value)
+float *var_new_float(const char *name, const char *def)
 {
 
-	if (_self == NULL)
-		return;
-
-	variable_node *self = (variable_node*)_self;
-
-	str_printf(&self->var.text, "%i", value);
-
-	self->var.real    = (float)value;
-	self->var.integer = value;
-
-	if (self->cb_func != NULL)
-		(self->cb_func)(self->cb_data, &self->var);
+	return var_new(name, &vtbl_f, def);
 
 }
 
 
 
-void var_set_cb(variable *_self, _variable_cb_t func, void *data)
+char **var_new_str(const char *name, const char *def)
 {
 
-	if (_self == NULL)
-		return;
-
-	variable_node *self = (variable_node*)_self;
-
-	self->cb_func = func;
-	self->cb_data = data;
+	return var_new(name, &vtbl_s, def);
 
 }
 
 
 
-bool var_parse(const void *buf, size_t len)
+const char *var_i_get(int *var)
+{
+	static char buf[32];
+
+	sprintf(buf, "%d", *var);
+	return buf;
+
+}
+
+
+
+void var_i_set(int *var, const char *str)
 {
 
-	return false;
+	*var = atoi(str);
+
+}
+
+
+
+const char *var_f_get(float *var)
+{
+	static char buf[32];
+
+	sprintf(buf, "%f", *var);
+	return buf;
+
+}
+
+
+
+void var_f_set(float *var, const char *str)
+{
+
+	*var = atof(str);
+
+}
+
+
+
+void var_s_new(varstr *var)
+{
+
+	var->str      = NULL;
+	var->capacity = 0;
+
+}
+
+
+
+void var_s_del(varstr *var)
+{
+
+	free(var->str);
+
+}
+
+
+
+const char *var_s_get(varstr *var)
+{
+
+	return var->str;
+
+}
+
+
+
+void var_s_set(varstr *var, const char *str)
+{
+
+	size_t len = strlen(str);
+
+	if (len >= var->capacity) {
+
+		var->capacity = len + 1;
+		var->str = realloc(var->str, var->capacity);
+
+	}
+
+	strcpy(var->str, str);
 
 }
 

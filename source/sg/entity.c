@@ -5,7 +5,6 @@
 #include "core/debug.h"
 #include "core/list.h"
 #include "core/logger.h"
-#include "core/string.h"
 #include "core/variable.h"
 
 #include "gr/limits.h"

@@ -6,7 +6,6 @@
 #include "core/algorithm.h"
 #include "core/blob.h"
 #include "core/logger.h"
-#include "core/string.h"
 
 
 #define BLOB_MAGIC  0x626f6c62

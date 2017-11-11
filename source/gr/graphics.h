@@ -104,16 +104,16 @@ typedef struct _graphics_t {
 
 	struct {
 
-		variable *screen_width;
-		variable *screen_height;
-		variable *screen_fullscreen;
+		int *screen_width;
+		int *screen_height;
+		int *screen_fullscreen;
 
-		variable *vsync_enable;
-		variable *vsync_adaptive;
+		int *vsync_enable;
+		int *vsync_adaptive;
 
-		variable *triple_buffer;
+		int *triple_buffer;
 
-		variable *validate;
+		int *validate;
 
 	} var;
 
