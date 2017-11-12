@@ -65,6 +65,10 @@ void main(string[] argv)
 	auto cube   = sg_cube_new("cube");
 	auto R      = sg_transform_new("cube");
 
+	auto ukey = input_binding_new("ukey", "mouse");
+	auto dkey = input_binding_new("dkey", "down");
+	auto lkey = input_binding_new("lkey", "left");
+	auto rkey = input_binding_new("rkey", "right");
 
 	//sg_camera_ortho(camera, 2.0f, 2.0f, -1.0f, +1.0f);
 	sg_camera_perspective(camera, 90.0f, 0.001f, 100.0f);
@@ -86,6 +90,11 @@ void main(string[] argv)
 		sg_transform_rotate_angle(R, x, x * 0.9f);
 		cube.entity.recalculate = true;
 		x += 0.01f;
+
+		if (ukey.state == KEY_PRESSED) writeln("Up!");
+		if (dkey.state == KEY_PRESSED) writeln("Down!");
+		if (lkey.state == KEY_PRESSED) writeln("Left!");
+		if (rkey.state == KEY_PRESSED) writeln("Right!");
 
 	}
 

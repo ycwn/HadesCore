@@ -1,19 +1,22 @@
 
 
-#ifndef __CORE_INPUT_H
-#define __CORE_INPUT_H
+struct graphics;
+
+enum {
+	GLFW_KEY_LAST = 348
+}
 
 
 enum {
 	KEY_DOWN    = 0x03, KEY_UP       = 0x00,
 	KEY_PRESSED = 0x02, KEY_RELEASED = 0x01
-};
+}
 
 enum {
 	MOUSE_DISABLED = 0,
 	MOUSE_ABSOLUTE = 1 << 0,
 	MOUSE_LOOK     = 1 << 1,
-};
+}
 
 
 enum {
@@ -21,10 +24,10 @@ enum {
 	BINDING_MOUSE = 1 << 24,
 
 	BINDING_MASK = BINDING_KEY | BINDING_MOUSE
-};
+}
 
 
-typedef struct input {
+struct input {
 
 	const graphics *gfx;
 
@@ -35,19 +38,19 @@ typedef struct input {
 
 	int mode;
 
-} input;
+}
 
 
-struct keyboard {
+struct keyboard_t {
 
-	int key[GLFW_KEY_LAST + 1];
+	int[GLFW_KEY_LAST + 1] key;
 
-};
+}
 
 
-struct mouse {
+struct mouse_t {
 
-	int button[16];
+	int[16] button;
 
 	float position_x, position_y;
 	float velocity_x, velocity_y;
@@ -58,32 +61,33 @@ struct mouse {
 	float x,    y;
 	float bank, pitch;
 
-};
+}
 
 
-typedef struct input_binding {
+struct input_binding {
 
 	int state;
 	int code;
 
-} input_binding;
+}
 
 
-input *input_create(const graphics *gfx);
-void   input_destroy();
-void   input_lock();
-void   input_unlock();
-void   input_reset();
-void   input_mousemode(int mode);
-void   input_update();
+extern(C) {
 
-input_binding *input_binding_new(const char *name, const char *def);
-void           input_binding_del(input_binding *ib);
+	input *input_create(const graphics *gfx);
+	void   input_destroy();
+	void   input_lock();
+	void   input_unlock();
+	void   input_reset();
+	void   input_mousemode(int mode);
+	void   input_update();
 
-
-extern struct keyboard keyboard;
-extern struct mouse    mouse;
+	input_binding *input_binding_new(const char *name, const char *def);
+	void           input_binding_del(input_binding *ib);
 
 
-#endif
+	extern keyboard_t keyboard;
+	extern mouse_t    mouse;
+
+}
 

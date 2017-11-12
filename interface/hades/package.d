@@ -8,6 +8,7 @@ public {
 	import hades.core_blob;
 	import hades.core_chrono;
 	import hades.core_hades;
+	import hades.core_input;
 	import hades.core_list;
 	import hades.core_logger;
 	import hades.core_types;

@@ -7,6 +7,7 @@
 #include "core/list.h"
 #include "core/blob.h"
 #include "core/chrono.h"
+#include "core/input.h"
 #include "core/logger.h"
 #include "core/variable.h"
 
@@ -68,6 +69,13 @@ const hades *hades_create()
 
 	}
 
+	if ((hades_core.in = input_create(hades_core.gfx)) == NULL) {
+
+		hades_fail("core: Failed to initialize input!\n");
+		return NULL;
+
+	}
+
 	return &hades_core;
 
 }
@@ -77,8 +85,8 @@ const hades *hades_create()
 void hades_destroy()
 {
 
+	input_destroy();
 	gr_destroy();
-
 	chrono_destroy();
 	blob_destroy();
 	log_destroy();
@@ -131,7 +139,7 @@ bool hades_update()
 	glfwPollEvents();
 
 	chrono_update(); // Advance game time
-	// Gather inputs
+	input_update();  // Gather inputs
 	// Trigger script events
 	// Process UI updates
 	// Simulate AI
