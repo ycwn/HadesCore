@@ -2,8 +2,6 @@
 implement attachments
 implement pipeline parser
 implement packed vector encoder functions
-rework geoblender to work with new vertexformats
-implement model loader
 implement memory manager
 optimize vertex buffers
 optimize uniform buffers
@@ -13,9 +11,7 @@ implement shadowmap cache
 port scenegraph code
 split visibility culling from transform hierarchy
 implement entity-component system (requires LDC with DMD 2.076 backend)
-port input subsystem
 
-implement D interface
 port old Hades logic code to D
 
 implement PBR deffered pipeline
