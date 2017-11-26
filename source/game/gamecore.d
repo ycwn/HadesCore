@@ -60,25 +60,29 @@ void main(string[] argv)
 
 	log_printf(LOG_DEBUG, "SEE YOU AT THE PARTY, RICHTER!: %s", engine.buildinfo.user);
 
-	auto scene  = sg_scenegraph_new("root");
-	auto camera = sg_camera_new("eye");
-	auto cube   = sg_cube_new("cube");
-	auto R      = sg_transform_new("cube");
+	gr_shader_load("shaders/suzanne.a");
+
+	auto scene   = sg_scenegraph_new("root");
+	auto camera  = sg_camera_new("eye");
+	auto suzanne = sg_geometry_new("Suzanne");
+	auto R       = sg_transform_new("cube");
 
 	auto ukey = input_binding_new("ukey", "mouse");
 	auto dkey = input_binding_new("dkey", "down");
 	auto lkey = input_binding_new("lkey", "left");
 	auto rkey = input_binding_new("rkey", "right");
 
+	sg_geometry_load(suzanne, "models/cube.geo");
+
 	//sg_camera_ortho(camera, 2.0f, 2.0f, -1.0f, +1.0f);
 	sg_camera_perspective(camera, 90.0f, 0.001f, 100.0f);
 	sg_camera_attach(camera, scene);
 	sg_camera_activate(camera);
 
-	cube.entity.transform = R;
+	suzanne.entity.transform = R;
 //	camera.transform = R;
 
-	sg_entity_attach(&cube.entity, scene);
+	sg_entity_attach(&suzanne.entity, scene);
 
 	sg_scenegraph_activate(scene);
 
@@ -88,7 +92,7 @@ void main(string[] argv)
 	while (hades_update()) {
 
 		sg_transform_rotate_angle(R, x, x * 0.9f);
-		cube.entity.recalculate = true;
+		suzanne.entity.recalculate = true;
 		x += 0.01f;
 
 		if (ukey.state == KEY_PRESSED) writeln("Up!");
@@ -98,7 +102,7 @@ void main(string[] argv)
 
 	}
 
-	sg_cube_del(cube);
+	sg_geometry_del(suzanne);
 	sg_camera_del(camera);
 	sg_scenegraph_del(scene);
 

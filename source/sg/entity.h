@@ -19,7 +19,7 @@ typedef struct sg_entity {
 	bool recalculate;
 
 	char *name;
-	u8    extra[];
+	u8    extra[0];
 
 } sg_entity;
 

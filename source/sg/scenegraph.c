@@ -160,7 +160,6 @@ void sg_scenegraph_harvest()
 			szero(u);
 
 			u.mat_model  = *model;
-			u.mat_normal = *model;
 			u.mat_view   = view;
 			u.mat_proj   = proj;
 			u.mat_eye    = eye;

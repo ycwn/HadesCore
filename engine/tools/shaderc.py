@@ -26,15 +26,13 @@ GR_V3 = 0x0001
 GR_T2 = 0x0002
 GR_T3 = 0x0006
 GR_C3 = 0x0008
-GR_N3 = 0x0010
-GR_X1 = 0x0040
-GR_X2 = 0x00c0
-GR_X3 = 0x01c0
-GR_X4 = 0x03c0
-GR_B2 = 0x0400
-GR_B4 = 0x0c00
-GR_B6 = 0x1c00
-GR_B8 = 0x3c00
+GR_Q4 = 0x0010
+GR_X2 = 0x0020
+GR_X4 = 0x0060
+GR_B2 = 0x0080
+GR_B4 = 0x0180
+GR_B6 = 0x0380
+GR_B8 = 0x0780
 
 
 KEYWORD_ENUM = [
@@ -781,7 +779,7 @@ def shader_preprocess(shader, source, includes):
 			shader.color_mask[atch] = mask
 
 
-	#vertex V2|V3[T2|T3][C3][N3][X1|X2|X3|X4][B2|B4|B6|B8]
+	#vertex V2|V3[T2|T3][C3][Q4][X2|X4][B2|B4|B6|B8]
 	def process_vertex(token, state, count):
 
 		n    = 0
@@ -794,11 +792,9 @@ def shader_preprocess(shader, source, includes):
 		elif token[0][n:n+2] == 'T3': mode |= GR_T3; n += 2
 
 		if token[0][n:n+2] == 'C3': mode |= GR_C3; n += 2
-		if token[0][n:n+2] == 'N3': mode |= GR_N3; n += 2
+		if token[0][n:n+2] == 'Q4': mode |= GR_Q4; n += 2
 
-		if   token[0][n:n+2] == 'X1': mode |= GR_X1; n += 2
-		elif token[0][n:n+2] == 'X2': mode |= GR_X2; n += 2
-		elif token[0][n:n+2] == 'X3': mode |= GR_X3; n += 2
+		if   token[0][n:n+2] == 'X2': mode |= GR_X2; n += 2
 		elif token[0][n:n+2] == 'X4': mode |= GR_X4; n += 2
 
 		if   token[0][n:n+2] == 'B2': mode |= GR_B2; n += 2
@@ -960,7 +956,7 @@ def shader_build_metadata(shader):
 	metadata += ".st %s\n" % shader.shader_stage
 	metadata += ".rt %s\n" % shader.render_target
 	metadata += "\n"
-	metadata += ".vf %x\n"    % shader.input_vertex_format
+	metadata += ".vf %d\n"    % shader.input_vertex_format
 	metadata += ".tp %d %d\n" % (shader.input_primitive_topology, shader.input_primitive_restart)
 	metadata += "\n"
 	metadata += ".rd %d\n"          % shader.raster_discard

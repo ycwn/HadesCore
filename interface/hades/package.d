@@ -19,6 +19,7 @@ public {
 	import hades.graphics_commandqueue;
 	import hades.graphics_dds;
 	import hades.graphics_framebuffer;
+	import hades.graphics_geometry;
 	import hades.graphics_graphics;
 	import hades.graphics_limits;
 	import hades.graphics_pixelformat;
@@ -31,10 +32,10 @@ public {
 
 	import hades.scenegraph_camera;
 	import hades.scenegraph_entity;
+	import hades.scenegraph_geometry;
 	import hades.scenegraph_light;
 	import hades.scenegraph_scenegraph;
 	import hades.scenegraph_transform;
-	import hades.scenegraph_cube;
 
 }
 

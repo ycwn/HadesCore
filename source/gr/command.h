@@ -17,6 +17,7 @@ typedef struct _gr_command_t {
 	gr_shader        *shader;
 	gr_vertexbuffer  *vertices;
 	gr_uniformbuffer *uniforms;
+	gr_uniformbuffer *material;
 	gr_texturearray  *textures;
 
 	int state;

@@ -22,6 +22,7 @@ font_res := 64
 font_aa  := 4
 
 ft := ../engine/tools/fonttool.py
+gt := ../engine/tools/geotool.py
 pt := ../engine/tools/blobtool.py
 sc := ../engine/tools/shaderc.py
 st := ../engine/tools/skintool.py
@@ -52,6 +53,7 @@ datadirs  = $(patsubst $(data)/%,%,$(sort $(dir $(datafiles))))
 include texture-$(texture_profile).rules
 
 ftflags   := -c "$(font_compression)" -a -s $(font_aa) -r $(font_res)
+gtflags   := -vt -vn -mp models/materials.ini
 cubefaces := _0_pos_x _1_neg_x _2_pos_y _3_neg_y _4_pos_z _5_neg_z
 
 
@@ -107,10 +109,10 @@ $(tracks): $(data)/%: %
 
 
 #
-# Copy models over
+# Convert FBX modeils
 #
-$(filter %.geo,$(models)): $(data)/%: %
-	@cp -v $< $@
+$(filter %.geo,$(models)): $(data)/%.geo: %.fbx
+	$(gt) $(gtflags) -o "$@" "$<"
 
 
 #

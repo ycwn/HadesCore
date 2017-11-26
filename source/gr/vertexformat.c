@@ -18,23 +18,21 @@ struct _elements_formats_t {
 
 } formats[] = {
 
-	{ GR_V3, GR_V2, 2, GR_VERTEX, VK_FORMAT_R16G16_SNORM,       4 },
-	{ GR_V3, GR_V3, 3, GR_VERTEX, VK_FORMAT_R16G16B16A16_SNORM, 8 },
+	{ GR_V3, GR_V2, 2, GR_VERTEX, VK_FORMAT_R16G16_UNORM,       4 },
+	{ GR_V3, GR_V3, 3, GR_VERTEX, VK_FORMAT_R16G16B16A16_UNORM, 8 },
 
-	{ GR_T3,     0, 0, GR_TEXTURE, 0,                           0 },
-	{ GR_T3, GR_T2, 2, GR_TEXTURE, VK_FORMAT_R16G16_UINT,       4 },
-	{ GR_T3, GR_T3, 3, GR_TEXTURE, VK_FORMAT_R16G16B16A16_SINT, 8 },
+	{ GR_T3,     0, 0, GR_TEXTURE, 0,                            0 },
+	{ GR_T3, GR_T2, 2, GR_TEXTURE, VK_FORMAT_R16G16_UNORM,       4 },
+	{ GR_T3, GR_T3, 3, GR_TEXTURE, VK_FORMAT_R16G16B16A16_SNORM, 8 },
 
 	{ GR_C3,     0, 0, GR_COLOR, 0,                                 0 },
 	{ GR_C3, GR_C3, 3, GR_COLOR, VK_FORMAT_B10G11R11_UFLOAT_PACK32, 4 },
 
-	{ GR_N3,     0, 0, GR_NORMAL, 0,                                 0 },
-	{ GR_N3, GR_N3, 3, GR_NORMAL, VK_FORMAT_A2B10G10R10_SINT_PACK32, 4 },
+	{ GR_Q4,     0, 0, GR_TANGENT, 0,                                  0 },
+	{ GR_Q4, GR_Q4, 3, GR_TANGENT, VK_FORMAT_A2B10G10R10_SNORM_PACK32, 4 },
 
 	{ GR_X4,     0, 0, GR_EXTRA, 0,                             0 },
-	{ GR_X4, GR_X1, 1, GR_EXTRA, VK_FORMAT_R16G16_SFLOAT,       4 },
 	{ GR_X4, GR_X2, 2, GR_EXTRA, VK_FORMAT_R16G16_SFLOAT,       4 },
-	{ GR_X4, GR_X3, 3, GR_EXTRA, VK_FORMAT_R16G16B16A16_SFLOAT, 8 },
 	{ GR_X4, GR_X4, 4, GR_EXTRA, VK_FORMAT_R16G16B16A16_SFLOAT, 8 },
 
 	{ GR_B2,     0, 0, GR_BONE0, 0,                           0 },
@@ -66,7 +64,7 @@ void gr_vf_init(gr_vertexformat *vf, uint format)
 	vf->stride += init_element(format, GR_V3, vf->stride, &vf->vertex);
 	vf->stride += init_element(format, GR_T3, vf->stride, &vf->texture);
 	vf->stride += init_element(format, GR_C3, vf->stride, &vf->color);
-	vf->stride += init_element(format, GR_N3, vf->stride, &vf->normal);
+	vf->stride += init_element(format, GR_Q4, vf->stride, &vf->tangent);
 	vf->stride += init_element(format, GR_X4, vf->stride, &vf->extra);
 	vf->stride += init_element(format, GR_B2, vf->stride, &vf->bones[0]);
 	vf->stride += init_element(format, GR_B4, vf->stride, &vf->bones[1]);
@@ -85,7 +83,7 @@ uint gr_vf_build_descriptors(gr_vertexformat *vf, VkVertexInputAttributeDescript
 	num += init_descriptor(&vf->vertex,   &vd[num]);
 	num += init_descriptor(&vf->texture,  &vd[num]);
 	num += init_descriptor(&vf->color,    &vd[num]);
-	num += init_descriptor(&vf->normal,   &vd[num]);
+	num += init_descriptor(&vf->tangent,  &vd[num]);
 	num += init_descriptor(&vf->extra,    &vd[num]);
 	num += init_descriptor(&vf->bones[0], &vd[num]);
 	num += init_descriptor(&vf->bones[1], &vd[num]);

@@ -47,6 +47,7 @@ void gr_command_init(gr_command *cmds, uint num)
 		cmds[n].shader   = NULL;
 		cmds[n].vertices = NULL;
 		cmds[n].uniforms = NULL;
+		cmds[n].material = NULL;
 		cmds[n].textures = NULL;
 
 		cmds[n].state = GR_COMMAND_STATE_INACTIVE;
