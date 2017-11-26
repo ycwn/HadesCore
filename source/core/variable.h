@@ -1,7 +1,7 @@
 
 
-#ifndef __CORE_VARIABLE_H
-#define __CORE_VARIABLE_H
+#ifndef CORE_VARIABLE_H
+#define CORE_VARIABLE_H
 
 
 typedef void variable;

@@ -1,7 +1,7 @@
 
 
-#ifndef __CORE_ALGORITHM_H
-#define __CORE_ALGORITHM_H
+#ifndef CORE_ALGORITHM_H
+#define CORE_ALGORITHM_H
 
 
 /**

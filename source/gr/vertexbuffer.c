@@ -15,9 +15,9 @@
 
 static graphics *gfx = NULL;
 
-static void reset  (struct _gr_vbuffer_t *buf);
-static void destroy(struct _gr_vbuffer_t *buf);
-static bool commit( struct _gr_vbuffer_t *dst, int usage, const void *src, size_t len);
+static void reset  (struct gr_vbuffer *buf);
+static void destroy(struct gr_vbuffer *buf);
+static bool commit( struct gr_vbuffer *dst, int usage, const void *src, size_t len);
 
 
 
@@ -77,7 +77,7 @@ bool gr_vertexbuffer_commit_indices( gr_vertexbuffer *vb, const void *buf, size_
 
 
 
-void reset(struct _gr_vbuffer_t *buf)
+void reset(struct gr_vbuffer *buf)
 {
 
 	buf->capacity = 0;
@@ -88,7 +88,7 @@ void reset(struct _gr_vbuffer_t *buf)
 
 
 
-void destroy(struct _gr_vbuffer_t *buf)
+void destroy(struct gr_vbuffer *buf)
 {
 
 	if (buf->buffer != NULL)
@@ -103,7 +103,7 @@ void destroy(struct _gr_vbuffer_t *buf)
 
 
 
-bool commit(struct _gr_vbuffer_t *dst, int usage, const void *buf, size_t len)
+bool commit(struct gr_vbuffer *dst, int usage, const void *buf, size_t len)
 {
 
 	if (buf == NULL || len > dst->capacity)

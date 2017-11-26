@@ -16,7 +16,7 @@ static void terminal_plain_create( log_writer *self, const void *arg);
 static void terminal_plain_destroy(log_writer *self);
 static void terminal_plain_write(  log_writer *self, int level, const char *buf, int len);
 
-static struct _log_terminal_plain_t {
+static struct log_terminal_plain {
 
 	log_writer writer;
 
@@ -37,7 +37,7 @@ static void terminal_color_create( log_writer *self, const void *arg);
 static void terminal_color_destroy(log_writer *self);
 static void terminal_color_write(  log_writer *self, int level, const char *buf, int len);
 
-static struct _log_terminal_color_t {
+static struct log_terminal_color {
 
 	log_writer writer;
 
@@ -71,7 +71,7 @@ static void file_plain_create( log_writer *self, const char *out);
 static void file_plain_destroy(log_writer *self);
 static void file_plain_write(  log_writer *self, int level, const char *buf, int len);
 
-static struct _log_file_plain_t {
+static struct log_file_plain {
 
 	log_writer  writer;
 	FILE       *file;
@@ -95,7 +95,7 @@ static void file_html_create( log_writer *self, const char *out);
 static void file_html_destroy(log_writer *self);
 static void file_html_write(  log_writer *self, int level, const char *buf, int len);
 
-static struct _log_file_html_t {
+static struct log_file_html {
 
 	log_writer writer;
 
@@ -327,7 +327,7 @@ void terminal_color_destroy(log_writer *self)
 
 void terminal_color_write(log_writer *self, int level, const char *buf, int len)
 {
-	struct _log_terminal_color_t *ltc = (struct _log_terminal_color_t*)self;
+	struct log_terminal_color *ltc = (struct log_terminal_color*)self;
 	const char *level_text[5]={
 		"",
 		"",
@@ -348,7 +348,7 @@ void terminal_color_write(log_writer *self, int level, const char *buf, int len)
 
 void file_plain_create(log_writer *self, const char *out)
 {
-	struct _log_file_plain_t *lfp = (struct _log_file_plain_t*)self;
+	struct log_file_plain *lfp = (struct log_file_plain*)self;
 
 	if (lfp->file != NULL)
 		fclose(lfp->file);
@@ -361,7 +361,7 @@ void file_plain_create(log_writer *self, const char *out)
 
 void file_plain_destroy(log_writer *self)
 {
-	struct _log_file_plain_t *lfp = (struct _log_file_plain_t*)self;
+	struct log_file_plain *lfp = (struct log_file_plain*)self;
 
 	if (lfp->file != NULL)
 		fclose(lfp->file);
@@ -374,7 +374,7 @@ void file_plain_destroy(log_writer *self)
 
 void file_plain_write(log_writer *self, int level, const char *buf, int len)
 {
-	struct _log_file_plain_t *lfp = (struct _log_file_plain_t*)self;
+	struct log_file_plain *lfp = (struct log_file_plain*)self;
 	const char *level_text[5]={
 		"",
 		"",
@@ -393,20 +393,20 @@ void file_plain_write(log_writer *self, int level, const char *buf, int len)
 
 void file_html_create(log_writer *self, const char *out)
 {
-	struct _log_file_html_t *lfh = (struct _log_file_html_t*)self;
+	struct log_file_html *lfh = (struct log_file_html*)self;
 }
 
 
 
 void file_html_destroy(log_writer *self)
 {
-	struct _log_file_html_t *lfh = (struct _log_file_html_t*)self;
+	struct log_file_html *lfh = (struct log_file_html*)self;
 }
 
 
 
 void file_html_write(log_writer *self, int level, const char *buf, int len)
 {
-	struct _log_file_html_t *lfh = (struct _log_file_html_t*)self;
+	struct log_file_html *lfh = (struct log_file_html*)self;
 }
 

@@ -1,7 +1,7 @@
 
 
-#ifndef __CORE_CHRONO_H
-#define __CORE_CHRONO_H
+#ifndef CORE_CHRONO_H
+#define CORE_CHRONO_H
 
 
 extern float chrono_time,    chrono_delta;

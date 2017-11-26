@@ -131,6 +131,7 @@ void hades_parse_commandline(const druntime_array *argv)
 
 bool hades_update()
 {
+
 	hades_core.terminate = glfwWindowShouldClose(hades_core.gfx->window);
 
 	if (hades_core.terminate)

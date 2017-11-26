@@ -1,7 +1,7 @@
 
 
-#ifndef __GR_RENDERTARGET_H
-#define __GR_RENDERTARGET_H
+#ifndef GR_RENDERTARGET_H
+#define GR_RENDERTARGET_H
 
 
 #define GR_RENDERPASS_DEFAULT  0x0000
@@ -27,7 +27,7 @@
 #define GR_RENDERPASS_LAYOUT_OUT_PRESENT     0x0300
 
 
-typedef struct _gr_rendertarget_t {
+typedef struct gr_rendertarget {
 
 	VkRenderPass  renderpass;
 	VkFramebuffer framebuffer;

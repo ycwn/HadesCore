@@ -1,7 +1,7 @@
 
 
-#ifndef __GR_COMMANDQUEUE_H
-#define __GR_COMMANDQUEUE_H
+#ifndef GR_COMMANDQUEUE_H
+#define GR_COMMANDQUEUE_H
 
 
 void gr_commandqueue_create();

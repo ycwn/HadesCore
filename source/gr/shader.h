@@ -1,10 +1,10 @@
 
 
-#ifndef __GR_SHADER_H
-#define __GR_SHADER_H
+#ifndef GR_SHADER_H
+#define GR_SHADER_H
 
 
-typedef struct _gr_shader_t {
+typedef struct gr_shader {
 
 	gr_vertexformat   vf;
 	gr_rendertarget  *rt;

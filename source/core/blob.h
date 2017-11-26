@@ -1,7 +1,7 @@
 
 
-#ifndef __CORE_BLOB_H
-#define __CORE_BLOB_H
+#ifndef CORE_BLOB_H
+#define CORE_BLOB_H
 
 
 #define BLOB_MAX_BLOBS  1024

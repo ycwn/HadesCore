@@ -1,7 +1,7 @@
 
 
-#ifndef __GR_TEXTURE_H
-#define __GR_TEXTURE_H
+#ifndef GR_TEXTURE_H
+#define GR_TEXTURE_H
 
 
 enum {

@@ -1,10 +1,10 @@
 
 
-#ifndef __GL_DDS_H
-#define __GL_DDS_H
+#ifndef GR_DDS_H
+#define GR_DDS_H
 
 
-typedef struct _gr_dds_t {
+typedef struct gr_dds {
 
 	const gr_pixelformat *format;
 	const u8             *data;

@@ -1,12 +1,8 @@
 
 
-#ifndef __CORE_HADES_H
-#define __CORE_HADES_H
+#ifndef CORE_HADES_H
+#define CORE_HADES_H
 
-
-typedef struct _graphics_t graphics;
-typedef struct _sound_t    sound;
-typedef struct _input_t    input;
 
 typedef struct {
 

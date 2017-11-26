@@ -1,7 +1,7 @@
 
 
-#ifndef __CORE_INPUT_H
-#define __CORE_INPUT_H
+#ifndef CORE_INPUT_H
+#define CORE_INPUT_H
 
 
 enum {

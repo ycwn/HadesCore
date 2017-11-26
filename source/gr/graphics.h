@@ -1,7 +1,7 @@
 
 
-#ifndef __GR_GRAPHICS_H
-#define __GR_GRAPHICS_H
+#ifndef GR_GRAPHICS_H
+#define GR_GRAPHICS_H
 
 
 #define GR_VKSYM_EXT(sym) extern PFN_##sym sym;
@@ -98,7 +98,7 @@ GR_VKSYM_EXT(vkCreateDebugReportCallbackEXT);
 GR_VKSYM_EXT(vkDestroyDebugReportCallbackEXT);
 
 
-typedef struct _graphics_t {
+typedef struct graphics {
 
 	GLFWwindow *window;
 

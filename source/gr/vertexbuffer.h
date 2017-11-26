@@ -1,10 +1,10 @@
 
 
-#ifndef __GR_VERTEXBUFFER_H
-#define __GR_VERTEXBUFFER_H
+#ifndef GR_VERTEXBUFFER_H
+#define GR_VERTEXBUFFER_H
 
 
-struct _gr_vbuffer_t {
+struct gr_vbuffer {
 
 	size_t capacity;
 
@@ -13,10 +13,10 @@ struct _gr_vbuffer_t {
 
 };
 
-typedef struct _gr_vertexbuffer_t {
+typedef struct gr_vertexbuffer {
 
-	struct _gr_vbuffer_t vertex;
-	struct _gr_vbuffer_t index;
+	struct gr_vbuffer vertex;
+	struct gr_vbuffer index;
 
 } gr_vertexbuffer;
 

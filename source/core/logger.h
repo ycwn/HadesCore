@@ -1,7 +1,7 @@
 
 
-#ifndef __CORE_LOGGER_H
-#define __CORE_LOGGER_H
+#ifndef CORE_LOGGER_H
+#define CORE_LOGGER_H
 
 
 #define LOG_MAX_SLOTS 4
@@ -10,13 +10,13 @@ enum {
 	LOG_DEBUG, LOG_INFO, LOG_WARN, LOG_ERROR, LOG_CRITICAL
 };
 
-struct _log_writer_t;
+struct log_writer;
 
-typedef void (*log_create_t)( struct _log_writer_t *self, const void *arg);
-typedef void (*log_destroy_t)(struct _log_writer_t *self);
-typedef void (*log_write_t)(  struct _log_writer_t *self, int level, const char *buf, int len);
+typedef void (*log_create_t)( struct log_writer *self, const void *arg);
+typedef void (*log_destroy_t)(struct log_writer *self);
+typedef void (*log_write_t)(  struct log_writer *self, int level, const char *buf, int len);
 
-typedef struct _log_writer_t {
+typedef struct log_writer {
 
 	log_create_t  create;
 	log_destroy_t destroy;

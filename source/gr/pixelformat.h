@@ -1,7 +1,7 @@
 
 
-#ifndef __GR_PIXELFORMAT_H
-#define __GR_PIXELFORMAT_H
+#ifndef GR_PIXELFORMAT_H
+#define GR_PIXELFORMAT_H
 
 
 enum {
@@ -11,7 +11,7 @@ enum {
 };
 
 
-typedef struct _gr_pixelformat_t {
+typedef struct gr_pixelformat {
 
 	const char *name;
 

@@ -7,7 +7,7 @@
 #include "gr/vertexformat.h"
 
 
-struct _elements_formats_t {
+struct elements_formats {
 
 	uint mask;
 	uint value;
@@ -50,8 +50,8 @@ struct _elements_formats_t {
 };
 
 
-static uint init_element(uint format, uint mask, uint offset, struct _gr_vertexformat_element_t *vfe);
-static uint init_descriptor(const struct _gr_vertexformat_element_t *vfe, VkVertexInputAttributeDescription *desc);
+static uint init_element(uint format, uint mask, uint offset, struct gr_vertexformat_element *vfe);
+static uint init_descriptor(const struct gr_vertexformat_element *vfe, VkVertexInputAttributeDescription *desc);
 
 
 
@@ -96,7 +96,7 @@ uint gr_vf_build_descriptors(gr_vertexformat *vf, VkVertexInputAttributeDescript
 
 
 
-uint init_element(uint format, uint mask, uint offset, struct _gr_vertexformat_element_t *vfe)
+uint init_element(uint format, uint mask, uint offset, struct gr_vertexformat_element *vfe)
 {
 
 	vfe->components = 0;
@@ -122,7 +122,7 @@ uint init_element(uint format, uint mask, uint offset, struct _gr_vertexformat_e
 
 
 
-uint init_descriptor(const struct _gr_vertexformat_element_t *vfe, VkVertexInputAttributeDescription *desc)
+uint init_descriptor(const struct gr_vertexformat_element *vfe, VkVertexInputAttributeDescription *desc)
 {
 
 	if (vfe->components == 0)

@@ -1,13 +1,13 @@
 
 
-#ifndef __CORE_LIST_H
-#define __CORE_LIST_H
+#ifndef CORE_LIST_H
+#define CORE_LIST_H
 
 
-typedef struct _list_t {
+typedef struct list {
 
-	struct _list_t *prev;
-	struct _list_t *next;
+	struct list *prev;
+	struct list *next;
 
 	void *ptr;
 

@@ -1,10 +1,10 @@
 
 
-#ifndef __CORE_ARCHIVE_H
-#define __CORE_ARCHIVE_H
+#ifndef CORE_ARCHIVE_H
+#define CORE_ARCHIVE_H
 
 
-typedef struct _archive_t {
+typedef struct archive {
 
 	const void *ptr;
 	size_t      len;

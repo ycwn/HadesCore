@@ -1,7 +1,7 @@
 
 
-#ifndef __GR_COMMAND_H
-#define __GR_COMMAND_H
+#ifndef GR_COMMAND_H
+#define GR_COMMAND_H
 
 
 enum {
@@ -12,7 +12,7 @@ enum {
 
 typedef void gr_texturearray;
 
-typedef struct _gr_command_t {
+typedef struct gr_command {
 
 	gr_shader        *shader;
 	gr_vertexbuffer  *vertices;

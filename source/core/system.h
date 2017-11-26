@@ -1,6 +1,7 @@
 
-#ifndef __CORE_SYSTEM_H
-#define __CORE_SYSTEM_H
+
+#ifndef CORE_SYSTEM_H
+#define CORE_SYSTEM_H
 
 
 #include <stdio.h>

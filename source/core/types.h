@@ -1,7 +1,7 @@
 
 
-#ifndef __CORE_TYPES_H
-#define __CORE_TYPES_H
+#ifndef CORE_TYPES_H
+#define CORE_TYPES_H
 
 
 typedef int8_t   i8;
@@ -30,6 +30,11 @@ typedef float M4[16];
 
 typedef simd4f   vec4;
 typedef simd4x4f mat4;
+
+
+typedef struct graphics graphics;
+typedef struct sound    sound;
+typedef struct input    input;
 
 
 static inline int   mini(int   x, int   y) { return (x < y)? x: y; }

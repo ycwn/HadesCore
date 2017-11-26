@@ -1,10 +1,10 @@
 
 
-#ifndef __GR_COMMANDLIST_H
-#define __GR_COMMANDLIST_H
+#ifndef GR_COMMANDLIST_H
+#define GR_COMMANDLIST_H
 
 
-typedef struct _gr_commandlist_t {
+typedef struct gr_commandlist {
 
 	gr_vertexbuffer  *vertices;
 	gr_uniformbuffer *uniforms;

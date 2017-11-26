@@ -1,7 +1,7 @@
 
 
-#ifndef __GR_VERTEXFORMAT_H
-#define __GR_VERTEXFORMAT_H
+#ifndef GR_VERTEXFORMAT_H
+#define GR_VERTEXFORMAT_H
 
 
 enum {
@@ -27,7 +27,7 @@ enum {
 };
 
 
-struct _gr_vertexformat_element_t {
+struct gr_vertexformat_element {
 
 	uint components;
 	uint binding;
@@ -38,14 +38,14 @@ struct _gr_vertexformat_element_t {
 };
 
 
-typedef struct _gr_vertexformat_t {
+typedef struct gr_vertexformat {
 
-	struct _gr_vertexformat_element_t vertex;
-	struct _gr_vertexformat_element_t texture;
-	struct _gr_vertexformat_element_t color;
-	struct _gr_vertexformat_element_t tangent;
-	struct _gr_vertexformat_element_t extra;
-	struct _gr_vertexformat_element_t bones[4];
+	struct gr_vertexformat_element vertex;
+	struct gr_vertexformat_element texture;
+	struct gr_vertexformat_element color;
+	struct gr_vertexformat_element tangent;
+	struct gr_vertexformat_element extra;
+	struct gr_vertexformat_element bones[4];
 
 	uint format;
 	uint stride;

@@ -1,10 +1,10 @@
 
 
-#ifndef __GR_UNIFORMBUFFER_H
-#define __GR_UNIFORMBUFFER_H
+#ifndef GR_UNIFORMBUFFER_H
+#define GR_UNIFORMBUFFER_H
 
 
-typedef struct _gr_uniformbuffer_t {
+typedef struct gr_uniformbuffer {
 
 	size_t capacity;
 

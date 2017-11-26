@@ -15,7 +15,7 @@
 #define AR_MARK1      '\x0a'
 
 
-typedef struct _entry_t {
+typedef struct entry {
 
 	char name[16];
 	char time[12];
