@@ -4,6 +4,11 @@
 #define CORE_SYSTEM_H
 
 
+#define _GNU_SOURCE
+#define VK_NO_PROTOTYPES
+#define GLFW_INCLUDE_VULKAN
+
+
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -20,9 +25,6 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/mman.h>
-
-#define VK_NO_PROTOTYPES
-#define GLFW_INCLUDE_VULKAN
 
 #include <GLFW/glfw3.h>
 
