@@ -25,7 +25,7 @@ public {
 	import hades.graphics_pixelformat;
 	import hades.graphics_rendertarget;
 	import hades.graphics_shader;
-	import hades.graphics_texture;
+	import hades.graphics_surface;
 	import hades.graphics_uniformbuffer;
 	import hades.graphics_vertexbuffer;
 	import hades.graphics_vertexformat;

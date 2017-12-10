@@ -50,9 +50,10 @@ static inline uint  clampu(uint  x, uint  min, uint  max) { return minu(maxu(x, 
 static inline float clampf(float x, float min, float max) { return minf(maxf(x, min), max); }
 
 
-#define countof(x) (sizeof(x) / sizeof((x)[0]))
-#define mzero(x)   memset((x),  0, sizeof(x))
-#define szero(x)   memset(&(x), 0, sizeof(x))
+#define countof(x)    (sizeof(x) / sizeof((x)[0]))
+#define mzero(x)      memset((x),  0, sizeof(x))
+#define szero(x)      memset(&(x), 0, sizeof(x))
+#define bitmask(t, n) (((t) (-((n) != 0)))  & (((t) -1) >> ((sizeof(t) * 8) - (n))))
 
 
 #include "druntime.h"

@@ -202,7 +202,7 @@ void gr_submit();
 int  gr_get_memory_type(uint mask, uint props);
 bool gr_create_buffer(VkBuffer *buf, VkDeviceMemory *mem, size_t size, uint usage, uint props);
 bool gr_create_image( VkImage  *img, VkDeviceMemory *mem, VkFormat format, uint width, uint height, uint depth,	uint mipmaps, uint layers, uint tiling, uint usage, uint props, uint flags);
-bool gr_create_image_view(VkImageView *view, VkImage img, VkFormat fmt);
+bool gr_create_image_view(VkImageView *view, VkImage img, VkFormat fmt, VkImageAspectFlags asp);
 void gr_transfer_begin();
 void gr_transfer_end();
 void gr_upload(const void *src, VkDeviceMemory dst, size_t len);
@@ -210,7 +210,7 @@ void gr_copy_buffer_to_buffer(VkBuffer src, VkBuffer dst, size_t len);
 void gr_copy_buffer_to_image( VkBuffer src,  VkImage  dst, uint width, uint height, uint depth);
 void gr_mcopy_buffer_to_buffer(VkBuffer src, VkBuffer dst, uint skip[],  uint offset[], size_t length[], uint count);
 void gr_mcopy_buffer_to_image( VkBuffer src, VkImage  dst, uint width, uint height, uint depth, uint offset[], uint mipmap[], uint layer[], uint count);
-void gr_transition_layout(VkImage img, VkImageLayout layout, VkAccessFlagBits src, VkAccessFlagBits dst);
+void gr_transition_layout(VkImage img, VkImageLayout layout, VkImageAspectFlags mask, VkAccessFlagBits src, VkAccessFlagBits dst);
 
 
 #endif

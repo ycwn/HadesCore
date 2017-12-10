@@ -3,12 +3,12 @@
 import hades.core_types;
 
 
-enum GPU_UNIFORM_FRAME    = 0;
+//enum GPU_UNIFORM_FRAME    = 0;
+enum GPU_UNIFORM_TEXTURES = 0;
 enum GPU_UNIFORM_SHADER   = 1;
 enum GPU_UNIFORM_OBJECT   = 2;
 enum GPU_UNIFORM_MATERIAL = 3;
 enum GPU_UNIFORM_SKELETON = 4;
-
 
 enum GPU_ATTRIBUTE_VERTEX  = 0;
 enum GPU_ATTRIBUTE_TEXTURE = 1;
@@ -20,11 +20,33 @@ enum GPU_ATTRIBUTE_BONE1   = 6;
 enum GPU_ATTRIBUTE_BONE2   = 7;
 enum GPU_ATTRIBUTE_BONE3   = 8;
 
+enum GPU_TEXTURE_2D_BINDING   = 0;
+enum GPU_TEXTURE_3D_BINDING   = 1;
+enum GPU_TEXTURE_CUBE_BINDING = 2;
+
 
 enum GPU_SHADER_ARGUMENTS   = 15;
 enum GPU_OBJECT_ARGUMENTS   = 4;
-enum GPU_MATERIAL_ARGUMENTS = 11;
+enum GPU_MATERIAL_TEXTURES  = 16;
+enum GPU_MATERIAL_ARGUMENTS = 7;
 enum GPU_SKELETON_BONES     = 256;
+enum GPU_TEXTURES_2D        = 10240;
+enum GPU_TEXTURES_3D        = 1024;
+enum GPU_TEXTURES_CUBE      = 2048;
+
+
+enum GPU_TEXTURES_MIN = 0;
+enum GPU_TEXTURES_NUM = GPU_TEXTURES_2D + GPU_TEXTURES_3D + GPU_TEXTURES_CUBE;
+
+enum GPU_TEXTURES_2D_BEGIN = GPU_TEXTURES_MIN;
+enum GPU_TEXTURES_2D_END   = GPU_TEXTURES_2D_BEGIN + GPU_TEXTURES_2D;
+
+enum GPU_TEXTURES_3D_BEGIN = GPU_TEXTURES_2D_END;
+enum GPU_TEXTURES_3D_END   = GPU_TEXTURES_3D_BEGIN + GPU_TEXTURES_3D;
+
+enum GPU_TEXTURES_CUBE_BEGIN = GPU_TEXTURES_3D_END;
+enum GPU_TEXTURES_CUBE_END   = GPU_TEXTURES_CUBE_BEGIN + GPU_TEXTURES_CUBE;
+
 
 
 struct gpu_uniform_frame {
@@ -67,12 +89,14 @@ struct gpu_uniform_material {
 	vec4 emission;
 	vec4 material;
 
+	uint[GPU_MATERIAL_TEXTURES] textures; // Texture IDs
+
 	vec4[GPU_MATERIAL_ARGUMENTS] arg; // Free material parameters
 
 }
 
 
-struct gpu_uniform_skeleton  {
+struct gpu_uniform_skeleton {
 
 	mat4[GPU_SKELETON_BONES] arg; // Skeletal bones
 

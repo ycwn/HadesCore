@@ -17,6 +17,7 @@ typedef struct gr_pixelformat {
 
 	int format;
 	int channels;
+	int aspect;
 
 	int bits;
 	int bits_r, bits_g, bits_b, bits_a;

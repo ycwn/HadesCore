@@ -5,11 +5,12 @@
 #define _HADES_GPUIO_GLSL_H
 
 
-#define GPU_UNIFORM_FRAME     0
-#define GPU_UNIFORM_SHADER    0
-#define GPU_UNIFORM_OBJECT    1
-#define GPU_UNIFORM_MATERIAL  2
-#define GPU_UNIFORM_SKELETON  3
+//#define GPU_UNIFORM_FRAME     0
+#define GPU_UNIFORM_TEXTURES  0
+#define GPU_UNIFORM_SHADER    1
+#define GPU_UNIFORM_OBJECT    2
+#define GPU_UNIFORM_MATERIAL  3
+#define GPU_UNIFORM_SKELETON  4
 
 #define GPU_ATTRIBUTE_VERTEX   0
 #define GPU_ATTRIBUTE_TEXTURE  1
@@ -21,21 +22,48 @@
 #define GPU_ATTRIBUTE_BONE2    7
 #define GPU_ATTRIBUTE_BONE3    8
 
+#define GPU_TEXTURE_2D_BINDING    0
+#define GPU_TEXTURE_3D_BINDING    1
+#define GPU_TEXTURE_CUBE_BINDING  2
+
+
 #define GPU_SHADER_ARGUMENTS    15
 #define GPU_OBJECT_ARGUMENTS    4
-#define GPU_MATERIAL_ARGUMENTS  11
+#define GPU_MATERIAL_TEXTURES   16
+#define GPU_MATERIAL_ARGUMENTS  7
 #define GPU_SKELETON_BONES      256
+#define GPU_TEXTURES_2D         10240
+#define GPU_TEXTURES_3D         1024
+#define GPU_TEXTURES_CUBE       2048
+
+
+#define GPU_TEXTURES_MIN  0
+#define GPU_TEXTURES_NUM  (GPU_TEXTURES_2D + GPU_TEXTURES_3D + GPU_TEXTURES_CUBE)
+
+#define GPU_TEXTURES_2D_BEGIN  GPU_TEXTURES_MIN
+#define GPU_TEXTURES_2D_END    (GPU_TEXTURES_2D_BEGIN + GPU_TEXTURES_2D)
+
+#define GPU_TEXTURES_3D_BEGIN  GPU_TEXTURES_2D_END
+#define GPU_TEXTURES_3D_END    (GPU_TEXTURES_3D_BEGIN + GPU_TEXTURES_3D)
+
+#define GPU_TEXTURES_CUBE_BEGIN  GPU_TEXTURES_3D_END
+#define GPU_TEXTURES_CUBE_END    (GPU_TEXTURES_CUBE_BEGIN + GPU_TEXTURES_CUBE)
 
 
 /*
-layout(binding=0, set=GPU_UNIFORM_FRAME) uniform g_frame_t {
+layout(std140, binding=0, set=GPU_UNIFORM_FRAME) uniform g_frame_t {
 
 	vec4 time;   // time, delta, delta^2, epoch
 
 } g_frame;
 */
 
-layout(binding=0, set=GPU_UNIFORM_SHADER) uniform g_shader_t {
+layout(binding=GPU_TEXTURE_2D_BINDING,   set=GPU_UNIFORM_TEXTURES) uniform sampler2D   g_surfaces[GPU_TEXTURES_2D];
+layout(binding=GPU_TEXTURE_3D_BINDING,   set=GPU_UNIFORM_TEXTURES) uniform sampler3D   g_volumes[GPU_TEXTURES_3D];
+layout(binding=GPU_TEXTURE_CUBE_BINDING, set=GPU_UNIFORM_TEXTURES) uniform samplerCube g_cubemaps[GPU_TEXTURES_CUBE];
+
+
+layout(std140, binding=0, set=GPU_UNIFORM_SHADER) uniform g_shader_t {
 
 	vec4 screen;  // width, height, hcoeff, vcoeff
 
@@ -44,7 +72,7 @@ layout(binding=0, set=GPU_UNIFORM_SHADER) uniform g_shader_t {
 } g_shader;
 
 
-layout(binding=0, set=GPU_UNIFORM_OBJECT) uniform g_object_t {
+layout(std140, binding=0, set=GPU_UNIFORM_OBJECT) uniform g_object_t {
 
 	mat4 mat_model;      // ModelSpace to WorldSpace
 	mat4 mat_view;       // WorldSpace to EyeSpace
@@ -59,7 +87,7 @@ layout(binding=0, set=GPU_UNIFORM_OBJECT) uniform g_object_t {
 } g_object;
 
 /*
-layout(binding=0, set=GPU_UNIFORM_MATERIAL) uniform g_material_t {
+layout(std140, binding=0, set=GPU_UNIFORM_MATERIAL) uniform g_material_t {
 
 	vec4 minimum;  // ModelSpace minimum extents
 	vec4 maximum;  // ModelSpace maximum extents
@@ -68,12 +96,14 @@ layout(binding=0, set=GPU_UNIFORM_MATERIAL) uniform g_material_t {
 	vec4 emission;
 	vec4 material;
 
+	uint texture[GPU_MATERIAL_TEXTURES];
+
 	vec4 arg[GPU_MATERIAL_ARGUMENTS]; // Free material parameters
 
 } g_material;
 
 
-layout(binding=0, set=GPU_UNIFORM_SKELETON) uniform g_skeleton_t {
+layout(std140, binding=0, set=GPU_UNIFORM_SKELETON) uniform g_skeleton_t {
 
 	mat4 bone[GPU_SKELETON_BONES]; // Skeletal bones
 

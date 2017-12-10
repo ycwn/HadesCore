@@ -10,8 +10,10 @@
 
 #include "gr/limits.h"
 #include "gr/graphics.h"
+#include "gr/pixelformat.h"
 #include "gr/framebuffer.h"
 #include "gr/rendertarget.h"
+#include "gr/surface.h"
 
 
 static const VkFormat depth_formats[]={
@@ -23,13 +25,10 @@ static const VkFormat depth_formats[]={
 
 };
 
-static graphics        *gfx  = NULL;
-static gr_rendertarget *fbrt = NULL;
-static VkFormat         depthstencil_format = VK_FORMAT_UNDEFINED;
-static VkImage          depthstencil_image  = NULL;
-static VkDeviceMemory   depthstencil_memory = NULL;
-static VkImageView      depthstencil_view   = NULL;
-static int              framebuffer_num     = 0;
+static graphics        *gfx   = NULL;
+static gr_rendertarget *fbrt  = NULL;
+static gr_surface      *depth = NULL;
+static int              framebuffer_num = 0;
 static VkFramebuffer    framebuffer_obj[GR_SWAPCHAIN_MAX] = { NULL };
 
 
@@ -75,7 +74,7 @@ bool gr_framebuffer_init()
 		gfx->vk.swapchain_format,
 		GR_RENDERPASS_LOAD_CLEAR | GR_RENDERPASS_STORE_PRESERVE | GR_RENDERPASS_LAYOUT_OUT_PRESENT);
 
-	//create_depthbuffer();
+	create_depthbuffer();
 
 	fbrt->renderpass = gr_rendertarget_create_renderpass(fbrt);
 
@@ -101,35 +100,7 @@ bool gr_framebuffer_init()
 		}
 
 	}
-//FIXME: Post image transition!!
-//FIXME: Other images need transition. move to common in graphics
-#if 0
-	VkImageMemoryBarrier imb;
 
-	szero(imb);
-
-	imb.sType                           = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-	imb.oldLayout                       = VK_IMAGE_LAYOUT_UNDEFINED;
-	imb.newLayout                       = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-	imb.srcQueueFamilyIndex             = VK_QUEUE_FAMILY_IGNORED;
-	imb.dstQueueFamilyIndex             = VK_QUEUE_FAMILY_IGNORED;
-	imb.image                           = depthstencil_image;
-	imb.subresourceRange.aspectMask     = VK_IMAGE_ASPECT_DEPTH_BIT;
-	imb.subresourceRange.baseMipLevel   = 0;
-	imb.subresourceRange.levelCount     = 1;
-	imb.subresourceRange.baseArrayLayer = 0;
-	imb.subresourceRange.layerCount     = 1;
-	imb.srcAccessMask                   = 0;
-	imb.dstAccessMask                   = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-
-	vkCmdPipelineBarrier(
-		NULL,//gfx->vk.command_buffer_curr,
-		VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-		0,
-		0, NULL,
-		0, NULL,
-		1, &imb);
-#endif
 	return true;
 
 }
@@ -153,10 +124,7 @@ void reset()
 	depth_bits   = 0;
 	stencil_bits = 0;
 */
-	depthstencil_format = VK_FORMAT_UNDEFINED;
-	depthstencil_image  = NULL;
-	depthstencil_memory = NULL;
-	depthstencil_view   = NULL;
+	depth = NULL;
 
 	framebuffer_num = 0;
 
@@ -181,6 +149,8 @@ void destroy()
 	if (fbrt->renderpass != NULL)
 		vkDestroyRenderPass(gfx->vk.gpu, fbrt->renderpass, NULL);
 
+	gr_surface_del(depth);
+
 	reset();
 
 }
@@ -191,7 +161,7 @@ void destroy()
 bool create_depthbuffer()
 {
 
-	depthstencil_format = VK_FORMAT_UNDEFINED;
+	uint depth_format = VK_FORMAT_UNDEFINED;
 
 	for (int n=0; depth_formats[n] != VK_FORMAT_UNDEFINED; n++) {
 
@@ -200,75 +170,30 @@ bool create_depthbuffer()
 
 		if (props.optimalTilingFeatures & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT) {
 
-			depthstencil_format = depth_formats[n];
+			depth_format = depth_formats[n];
 			break;
 
 		}
 
 	}
 
-	if (depthstencil_format == VK_FORMAT_UNDEFINED)
+	if (depth_format == VK_FORMAT_UNDEFINED)
 		return false;
 
-	VkImageCreateInfo ici = { 0 };
+	gr_surface_del(depth);
 
-	ici.sType         = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-	ici.imageType     = VK_IMAGE_TYPE_2D;
-	ici.extent.width  = fbrt->width;
-	ici.extent.height = fbrt->height;
-	ici.extent.depth  = 1;
-	ici.mipLevels     = 1;
-	ici.arrayLayers   = 1;
-	ici.format        = depthstencil_format;
-	ici.tiling        = VK_IMAGE_TILING_OPTIMAL;
-	ici.initialLayout = VK_IMAGE_LAYOUT_PREINITIALIZED;
-	ici.usage         = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
-	ici.samples       = VK_SAMPLE_COUNT_1_BIT;
-	ici.sharingMode   = VK_SHARING_MODE_EXCLUSIVE;
+	depth = gr_surface_attachment("depthbuffer", fbrt->width, fbrt->height, depth_format, true);
 
-	if (vkCreateImage(gfx->vk.gpu, &ici, NULL, &depthstencil_image) != VK_SUCCESS)
-		return false;
-
-	VkMemoryRequirements mr;
-	VkMemoryAllocateInfo mai = { 0 };
-
-	vkGetImageMemoryRequirements(gfx->vk.gpu, depthstencil_image, &mr);
-
-	mai.sType           = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-	mai.allocationSize  = mr.size;
-	mai.memoryTypeIndex = -1;//FIXME: rend->get_memory_type(mr.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-
-	if (vkAllocateMemory(gfx->vk.gpu, &mai, NULL, &depthstencil_memory) != VK_SUCCESS)
-		return false;
-
-	vkBindImageMemory(gfx->vk.gpu, depthstencil_image, depthstencil_memory, 0);
-
-	VkImageViewCreateInfo ivci = { 0 };
-
-	ivci.sType                           = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-	ivci.image                           = depthstencil_image;
-	ivci.viewType                        = VK_IMAGE_VIEW_TYPE_2D;
-	ivci.format                          = depthstencil_format;
-	ivci.components.r                    = VK_COMPONENT_SWIZZLE_IDENTITY;
-	ivci.components.g                    = VK_COMPONENT_SWIZZLE_IDENTITY;
-	ivci.components.b                    = VK_COMPONENT_SWIZZLE_IDENTITY;
-	ivci.components.a                    = VK_COMPONENT_SWIZZLE_IDENTITY;
-	ivci.subresourceRange.aspectMask     = VK_IMAGE_ASPECT_DEPTH_BIT;
-	ivci.subresourceRange.baseMipLevel   = 0;
-	ivci.subresourceRange.levelCount     = 1;
-	ivci.subresourceRange.baseArrayLayer = 0;
-	ivci.subresourceRange.layerCount     = 1;
-
-	if (vkCreateImageView(gfx->vk.gpu, &ivci, NULL, &depthstencil_view) != VK_SUCCESS)
+	if (depth == NULL)
 		return false;
 
 	const VkClearValue depthstencil_clear = { 1.0f, 0 };
 
 	gr_rendertarget_append(
 		fbrt,
-		depthstencil_view,
+		depth->image_view,
 		&depthstencil_clear,
-		depthstencil_format,
+		depth->pf->format,
 		GR_RENDERPASS_LOAD_CLEAR | GR_RENDERPASS_LAYOUT_OUT_DS_OPTIMAL);
 
 	return true;

@@ -67,6 +67,12 @@ void main(string[] argv)
 	auto suzanne = sg_geometry_new("Suzanne");
 	auto R       = sg_transform_new("cube");
 
+	auto nehe_r = gr_surface_open("textures/NeHe-R.dds");
+	auto nehe_g = gr_surface_open("textures/NeHe-G.dds");
+	auto nehe_b = gr_surface_open("textures/NeHe-B.dds");
+
+	gr_surface_bind(nehe_b);
+
 	auto ukey = input_binding_new("ukey", "mouse");
 	auto dkey = input_binding_new("dkey", "down");
 	auto lkey = input_binding_new("lkey", "left");
@@ -86,18 +92,20 @@ void main(string[] argv)
 
 	sg_scenegraph_activate(scene);
 
-	sg_transform_translate(R, [ 0.0f, 0.0f, -1.0f, 0.0f ]);
+	sg_transform_translate(R, [ 0.0f, 0.0f, -2.0f, 0.0f ]);
 
 	float x = 0.0f;
+	uint  n = 0;
+
 	while (hades_update()) {
 
 		sg_transform_rotate_angle(R, x, x * 0.9f);
 		suzanne.entity.recalculate = true;
-		x += 0.01f;
+		x += 0.02f;
 
-		if (ukey.state == KEY_PRESSED) writeln("Up!");
-		if (dkey.state == KEY_PRESSED) writeln("Down!");
-		if (lkey.state == KEY_PRESSED) writeln("Left!");
+		if (ukey.state == KEY_PRESSED) { gr_surface_unbind(nehe_r); gr_surface_unbind(nehe_g); gr_surface_bind(nehe_b); }
+		if (dkey.state == KEY_PRESSED) { gr_surface_unbind(nehe_g); gr_surface_unbind(nehe_b); gr_surface_bind(nehe_r); }
+		if (lkey.state == KEY_PRESSED) { gr_surface_unbind(nehe_b); gr_surface_unbind(nehe_r); gr_surface_bind(nehe_g); }
 		if (rkey.state == KEY_PRESSED) writeln("Right!");
 
 	}

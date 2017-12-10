@@ -97,7 +97,7 @@ $(scripts): $(data)/%: ../%
 # Compile shaders
 #
 $(shaders): $(data)/%.a: ../%.shader
-	$(sc) -I../shaders/sys -I../interface -K -o $@ $<
+	$(sc) -I../shaders/sys -I../interface -K -o $@ $< ../shaders/etc/glslangValidator.conf
 
 
 #

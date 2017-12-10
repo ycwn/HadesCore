@@ -13,7 +13,7 @@
 #include "gr/pixelformat.h"
 #include "gr/framebuffer.h"
 #include "gr/rendertarget.h"
-#include "gr/texture.h"
+#include "gr/surface.h"
 #include "gr/vertexbuffer.h"
 #include "gr/uniformbuffer.h"
 #include "gr/shader.h"
@@ -206,7 +206,7 @@ graphics *gr_create()
 	gr_rendertarget_create(&gfx);
 	gr_framebuffer_create(&gfx);
 	gr_shader_create(&gfx);
-	gr_texture_create(&gfx);
+	gr_surface_create(&gfx);
 	gr_command_create();
 	gr_commandqueue_create();
 	gr_vertexbuffer_create(&gfx);
@@ -231,7 +231,7 @@ void gr_destroy()
 	gr_vertexbuffer_destroy();
 	gr_commandqueue_destroy();
 	gr_command_destroy();
-	gr_texture_destroy();
+	gr_surface_destroy();
 	gr_shader_destroy();
 	gr_framebuffer_destroy();
 	gr_rendertarget_destroy();
@@ -334,6 +334,7 @@ void gr_submit()
 
 	gr_commandqueue_consume();
 	gr_framebuffer_select();
+	gr_surface_update_cache();
 
 	VkCommandBuffer   curr_cmd    = gfx.vk.command_buffer[gfx.vk.swapchain_curr];
 	VkFence           curr_fence  = gfx.vk.command_fence[gfx.vk.swapchain_curr];
@@ -412,12 +413,12 @@ void gr_submit()
 		if (curr_ubo != cmd->uniforms/*|| curr_tex != cmd->t*/) {
 
 			curr_ubo = cmd->uniforms;
-//			curr_tex = cmd->t;
+			curr_mat = cmd->material;
 
 			const VkDescriptorSet descriptors[]={
+				gr_surface_get_descriptor(),
 				curr_shader->ub.descriptor,
 				curr_ubo->descriptor
-//				curr_tex->get_descriptor()
 			};
 
 			vkCmdBindDescriptorSets(
@@ -592,7 +593,7 @@ fail:
 
 
 
-bool gr_create_image_view(VkImageView *view, VkImage img, VkFormat fmt)
+bool gr_create_image_view(VkImageView *view, VkImage img, VkFormat fmt, VkImageAspectFlags asp) //TODO: Move this into surface
 {
 
 	VkImageViewCreateInfo ivci = { 0 };
@@ -601,9 +602,9 @@ bool gr_create_image_view(VkImageView *view, VkImage img, VkFormat fmt)
 	ivci.image                           = img;
 	ivci.viewType                        = VK_IMAGE_VIEW_TYPE_2D;
 	ivci.format                          = fmt;
-	ivci.subresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+	ivci.subresourceRange.aspectMask     = asp;
 	ivci.subresourceRange.baseMipLevel   = 0;
-	ivci.subresourceRange.levelCount     = 1;
+	ivci.subresourceRange.levelCount     = VK_REMAINING_MIP_LEVELS;
 	ivci.subresourceRange.baseArrayLayer = 0;
 	ivci.subresourceRange.layerCount     = 1;
 
@@ -764,7 +765,7 @@ void gr_mcopy_buffer_to_image(
 
 
 
-void gr_transition_layout(VkImage img, VkImageLayout layout, VkAccessFlagBits src, VkAccessFlagBits dst)
+void gr_transition_layout(VkImage img, VkImageLayout layout, VkImageAspectFlags mask, VkAccessFlagBits src, VkAccessFlagBits dst)
 {
 
 	gr_transfer_begin();
@@ -777,17 +778,51 @@ void gr_transition_layout(VkImage img, VkImageLayout layout, VkAccessFlagBits sr
 	imb.srcQueueFamilyIndex             = VK_QUEUE_FAMILY_IGNORED;
 	imb.dstQueueFamilyIndex             = VK_QUEUE_FAMILY_IGNORED;
 	imb.image                           = img;
-	imb.subresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+	imb.subresourceRange.aspectMask     = mask;
 	imb.subresourceRange.baseMipLevel   = 0;
-	imb.subresourceRange.levelCount     = 1;
+	imb.subresourceRange.levelCount     = VK_REMAINING_MIP_LEVELS;
 	imb.subresourceRange.baseArrayLayer = 0;
 	imb.subresourceRange.layerCount     = 1;
 	imb.srcAccessMask                   = src;
 	imb.dstAccessMask                   = dst;
 
-	vkCmdPipelineBarrier(gfx.vk.transfer_buffer,
-		VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-		0, 0, NULL, 0, NULL, 1, &imb);
+	VkPipelineStageFlags src_mask =
+		(src == VK_ACCESS_INDIRECT_COMMAND_READ_BIT)?           VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT:
+		(src == VK_ACCESS_INDEX_READ_BIT)?                      VK_PIPELINE_STAGE_VERTEX_INPUT_BIT:
+		(src == VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT)?           VK_PIPELINE_STAGE_VERTEX_INPUT_BIT:
+		(src == VK_ACCESS_UNIFORM_READ_BIT)?                    VK_PIPELINE_STAGE_VERTEX_SHADER_BIT:
+		(src == VK_ACCESS_INPUT_ATTACHMENT_READ_BIT)?           VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT:
+		(src == VK_ACCESS_SHADER_READ_BIT)?                     VK_PIPELINE_STAGE_VERTEX_SHADER_BIT:
+		(src == VK_ACCESS_SHADER_WRITE_BIT)?                    VK_PIPELINE_STAGE_VERTEX_SHADER_BIT:
+		(src == VK_ACCESS_COLOR_ATTACHMENT_READ_BIT)?           VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT:
+		(src == VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT)?          VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT:
+		(src == VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT)?   VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT:
+		(src == VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT)?  VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT:
+		(src == VK_ACCESS_TRANSFER_READ_BIT)?                   VK_PIPELINE_STAGE_TRANSFER_BIT:
+		(src == VK_ACCESS_TRANSFER_WRITE_BIT)?                  VK_PIPELINE_STAGE_TRANSFER_BIT:
+		(src == VK_ACCESS_HOST_READ_BIT)?                       VK_PIPELINE_STAGE_HOST_BIT:
+		(src == VK_ACCESS_HOST_WRITE_BIT)?                      VK_PIPELINE_STAGE_HOST_BIT:
+									VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+
+	VkPipelineStageFlags dst_mask =
+		(dst == VK_ACCESS_INDIRECT_COMMAND_READ_BIT)?           VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT:
+		(dst == VK_ACCESS_INDEX_READ_BIT)?                      VK_PIPELINE_STAGE_VERTEX_INPUT_BIT:
+		(dst == VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT)?           VK_PIPELINE_STAGE_VERTEX_INPUT_BIT:
+		(dst == VK_ACCESS_UNIFORM_READ_BIT)?                    VK_PIPELINE_STAGE_VERTEX_SHADER_BIT:
+		(dst == VK_ACCESS_INPUT_ATTACHMENT_READ_BIT)?           VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT:
+		(dst == VK_ACCESS_SHADER_READ_BIT)?                     VK_PIPELINE_STAGE_VERTEX_SHADER_BIT:
+		(dst == VK_ACCESS_SHADER_WRITE_BIT)?                    VK_PIPELINE_STAGE_VERTEX_SHADER_BIT:
+		(dst == VK_ACCESS_COLOR_ATTACHMENT_READ_BIT)?           VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT:
+		(dst == VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT)?          VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT:
+		(dst == VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT)?   VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT:
+		(dst == VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT)?  VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT:
+		(dst == VK_ACCESS_TRANSFER_READ_BIT)?                   VK_PIPELINE_STAGE_TRANSFER_BIT:
+		(dst == VK_ACCESS_TRANSFER_WRITE_BIT)?                  VK_PIPELINE_STAGE_TRANSFER_BIT:
+		(dst == VK_ACCESS_HOST_READ_BIT)?                       VK_PIPELINE_STAGE_HOST_BIT:
+		(dst == VK_ACCESS_HOST_WRITE_BIT)?                      VK_PIPELINE_STAGE_HOST_BIT:
+									VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+
+	vkCmdPipelineBarrier(gfx.vk.transfer_buffer, src_mask, dst_mask, 0, 0, NULL, 0, NULL, 1, &imb);
 
 	gr_transfer_end();
 
@@ -1434,7 +1469,7 @@ bool init_descriptors()
 		VkDescriptorSetLayoutCreateInfo dslci = {};
 
 		dps.type            = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		dps.descriptorCount = 1;
+		dps.descriptorCount = 256;
 
 		dpci.sType         = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
 		dpci.poolSizeCount = 1;
@@ -1460,31 +1495,43 @@ bool init_descriptors()
 	}
 
 	{
-		VkDescriptorPoolSize            dps   = {};
-		VkDescriptorPoolCreateInfo      dpci  = {};
-		VkDescriptorSetLayoutBinding    dslb  = {};
-		VkDescriptorSetLayoutCreateInfo dslci = {};
+		VkDescriptorPoolSize            dps     = {};
+		VkDescriptorPoolCreateInfo      dpci    = {};
+		VkDescriptorSetLayoutBinding    dslb[3] = {};
+		VkDescriptorSetLayoutCreateInfo dslci   = {};
 
 		dps.type            = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		dps.descriptorCount = 1;
+		dps.descriptorCount = GPU_TEXTURES_NUM;
 
 		dpci.sType         = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
 		dpci.poolSizeCount = 1;
 		dpci.pPoolSizes    = &dps;
-		dpci.maxSets       = 256;
+		dpci.maxSets       = 4;
 
 		if (vkCreateDescriptorPool(gfx.vk.gpu, &dpci, NULL, &gfx.vk.descriptor_texture_pool) != VK_SUCCESS)
 			return fail_msg("graphics: [texture] vkCreateDescriptorPool() failed!");
 
-		dslb.binding            = 0;
-		dslb.descriptorType     = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		dslb.descriptorCount    = 1;
-		dslb.stageFlags         = VK_SHADER_STAGE_FRAGMENT_BIT;
-		dslb.pImmutableSamplers = NULL;
+		dslb[0].binding            = GPU_TEXTURE_2D_BINDING;
+		dslb[0].descriptorType     = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		dslb[0].descriptorCount    = GPU_TEXTURES_2D;
+		dslb[0].stageFlags         = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+		dslb[0].pImmutableSamplers = NULL;
+
+		dslb[1].binding            = GPU_TEXTURE_3D_BINDING;
+		dslb[1].descriptorType     = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		dslb[1].descriptorCount    = GPU_TEXTURES_3D;
+		dslb[1].stageFlags         = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+		dslb[1].pImmutableSamplers = NULL;
+
+		dslb[2].binding            = GPU_TEXTURE_CUBE_BINDING;
+		dslb[2].descriptorType     = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		dslb[2].descriptorCount    = GPU_TEXTURES_CUBE;
+		dslb[2].stageFlags         = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+		dslb[2].pImmutableSamplers = NULL;
 
 		dslci.sType        = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-		dslci.bindingCount = 1;
-		dslci.pBindings    = &dslb;
+		dslci.bindingCount = countof(dslb);
+		dslci.pBindings    = &dslb[0];
 
 		if (vkCreateDescriptorSetLayout(gfx.vk.gpu, &dslci, NULL, &gfx.vk.descriptor_texture_layout) != VK_SUCCESS)
 			return fail_msg("graphics: [texture] vkCreateDescriptorSetLayout() failed!");
@@ -1493,9 +1540,9 @@ bool init_descriptors()
 
 	const VkDescriptorSetLayout descriptors[] = {
 		//gfx.vk.descriptor_uniform_layout,
+		gfx.vk.descriptor_texture_layout,
 		gfx.vk.descriptor_uniform_layout,
-		gfx.vk.descriptor_uniform_layout,
-		gfx.vk.descriptor_texture_layout
+		gfx.vk.descriptor_uniform_layout
 	};
 
 	VkPipelineLayoutCreateInfo plci = {};
