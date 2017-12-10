@@ -1209,7 +1209,6 @@ device_found:
 //
 // Init device
 	VkDeviceQueueCreateInfo  dqci[2] = {};
-	VkPhysicalDeviceFeatures pdf = {};
 	VkDeviceCreateInfo       dci = {};
 
 	dqci[0].sType            = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
@@ -1225,7 +1224,7 @@ device_found:
 	dci.sType                   = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
 	dci.pQueueCreateInfos       = dqci;
 	dci.queueCreateInfoCount    = countof(dqci);
-	dci.pEnabledFeatures        = &pdf;
+	dci.pEnabledFeatures        = &gfx.vk.device_features;
 	dci.enabledExtensionCount   = gfx.ext.device_num;
 	dci.ppEnabledExtensionNames = gfx.ext.device;
 //	dci.ppEnabledLayerNames     = layer_names;
