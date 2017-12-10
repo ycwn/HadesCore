@@ -121,7 +121,7 @@ void hades_parse_commandline(const druntime_array *argv)
 		mzero(val);
 		strncpy(val, eq + 1, str->length - (eq - str->string + 1));
 
-		var_set(var, val);
+		var_nset(var, val);
 
 	}
 
