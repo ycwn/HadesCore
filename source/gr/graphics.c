@@ -190,7 +190,7 @@ graphics *gr_create()
 	gfx.var.screen_height     = var_new_int("gr.screen.height",   "576");
 	gfx.var.screen_fullscreen = var_new_int("gr.screen.full",       "0");
 	gfx.var.vsync_enable      = var_new_int("gr.vsync.enable",      "1");
-	gfx.var.vsync_adaptive    = var_new_int("gr.vsync.adaptive",    "1");
+	gfx.var.vsync_adaptive    = var_new_int("gr.vsync.adaptive",    "0");
 	gfx.var.triple_buffer     = var_new_int("gr.tribuffer",         "0");
 	gfx.var.validate          = var_new_int("gr.validate",          "0");
 
