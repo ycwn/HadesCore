@@ -10,6 +10,7 @@ modelsrc   := $(shell grep -v '\#' models/models.conf)
 musicsrc   := $(wildcard music/*.ogg)
 scriptsrc  := $(shell find ../script -type f -iname '*.as')
 shadersrc  := $(wildcard ../shaders/*.shader)
+rendrc     := $(wildcard ../shaders/*.conf)
 skinsrc    := $(shell cat hud/skins.conf)
 uidefrc    := $(shell find hud/ -type f -iname '*.ui')
 soundfxsrc :=
@@ -38,6 +39,7 @@ models   += $(patsubst %.png,$(data)/%.dds,$(foreach mdl,$(modelsrc),$(wildcard 
 music     = $(musicsrc:%=$(data)/%)
 scripts   = $(scriptsrc:../%=$(data)/%)
 shaders   = $(shadersrc:../%.shader=$(data)/%.a)
+rendrcs   = $(rendrc:../%.conf=$(data)/%.conf)
 skins     = $(skinsrc:%=$(data)/hud/%.dds)
 skins    += $(skinsrc:%=$(data)/hud/%.xml)
 uidefs    = $(uidefrc:%=$(data)/%)
@@ -47,7 +49,7 @@ textures  = $(textures_bc1:%=$(data)/textures/%.dds)
 textures += $(textures_bc2:%=$(data)/textures/%.dds)
 textures += $(textures_bc3:%=$(data)/textures/%.dds)
 
-datafiles = $(sort $(config) $(fonts) $(models) $(music) $(scripts) $(shaders) $(skins) $(uidefs) $(textures) $(tracks))
+datafiles = $(sort $(config) $(fonts) $(models) $(music) $(scripts) $(shaders) $(rendrcs) $(skins) $(uidefs) $(textures) $(tracks))
 datadirs  = $(patsubst $(data)/%,%,$(sort $(dir $(datafiles))))
 
 include texture-$(texture_profile).rules
@@ -98,6 +100,14 @@ $(scripts): $(data)/%: ../%
 #
 $(shaders): $(data)/%.a: ../%.shader
 	$(sc) -I../shaders/sys -I../interface -K -o $@ $< ../shaders/etc/glslangValidator.conf
+
+
+#
+# Copy over renderer configuration
+#
+$(rendrcs): $(data)/%: ../%
+	echo "$(tracks)" "$@" "$<"
+	@cp -v $< $@
 
 
 #

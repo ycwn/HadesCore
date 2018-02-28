@@ -111,7 +111,6 @@ extern(C) {
 	bool gr_request_device_extension(  const char *ext);
 
 	bool gr_set_video();
-	bool gr_build_pipeline(const char *file);
 	void gr_submit();
 
 	int  gr_get_memory_type(uint mask, uint props);

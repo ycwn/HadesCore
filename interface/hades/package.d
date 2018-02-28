@@ -14,6 +14,7 @@ public {
 	import hades.core_types;
 	import hades.core_variable;
 
+	import hades.graphics_builder;
 	import hades.graphics_command;
 	import hades.graphics_commandlist;
 	import hades.graphics_commandqueue;

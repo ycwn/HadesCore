@@ -5,10 +5,10 @@
 #shader suzanne
 #stage  500
 
-#render    framebuffer
+#render    ambience
 #vertex    V3T2Q4
 #primitive triangles
-#raster    front
+#raster    both
 #depth     lequal
 
 

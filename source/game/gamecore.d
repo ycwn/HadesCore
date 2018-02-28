@@ -26,6 +26,10 @@ void main(string[] argv)
 
 	gr_set_video();
 
+	gr_builder_define("SCREEN_WIDTH",  1024);
+	gr_builder_define("SCREEN_HEIGHT", 576);
+	gr_builder_parse("shaders/renderer.conf");
+
 	alias entity!(component_light,  component_ai, component_sprite, component_transform) enemy_willowisp;
 	alias entity!(component_ai,     component_sprite, component_transform)               enemy_bandit;
 	alias entity!(component_camera, component_sprite, component_transform)               player;
