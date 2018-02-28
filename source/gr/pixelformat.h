@@ -41,7 +41,8 @@ void gr_pixelformat_destroy();
 
 bool gr_pixelformat_init();
 
-const gr_pixelformat *gr_pixelformat_get(int format);
+const gr_pixelformat *gr_pixelformat_get( int format);
+const gr_pixelformat *gr_pixelformat_find(const char *name);
 
 
 #endif

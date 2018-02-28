@@ -255,3 +255,16 @@ const gr_pixelformat *gr_pixelformat_get(int format)
 
 }
 
+
+
+const gr_pixelformat *gr_pixelformat_find(const char *name)
+{
+
+	for (int n=0; n < countof(formats); n++)
+		if (!strcmp(formats[n].name, name))
+			return &formats[n];
+
+	return &formats[VK_FORMAT_UNDEFINED];
+
+}
+

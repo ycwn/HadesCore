@@ -13,7 +13,7 @@ enum {
 
 struct gr_pixelformat {
 
-	const char *name;
+	const(char) *name;
 
 	int format;
 	int channels;
@@ -43,6 +43,7 @@ extern(C) {
 	bool gr_pixelformat_init();
 
 	const(gr_pixelformat) *gr_pixelformat_get(int format);
+	const(gr_pixelformat) *gr_pixelformat_find(const(char) *name);
 
 }
 
