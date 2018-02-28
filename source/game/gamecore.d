@@ -73,7 +73,7 @@ void main(string[] argv)
 
 	gr_surface_bind(nehe_b);
 
-	auto ukey = input_binding_new("ukey", "mouse");
+	auto ukey = input_binding_new("ukey", "up");
 	auto dkey = input_binding_new("dkey", "down");
 	auto lkey = input_binding_new("lkey", "left");
 	auto rkey = input_binding_new("rkey", "right");

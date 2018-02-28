@@ -1,6 +1,7 @@
 
 
-struct graphics;
+import hades.graphics_graphics;
+
 
 enum {
 	GLFW_KEY_LAST = 348
@@ -74,7 +75,7 @@ struct input_binding {
 
 extern(C) {
 
-	input *input_create(const graphics *gfx);
+	input *input_create(const(graphics) *gfx);
 	void   input_destroy();
 	void   input_lock();
 	void   input_unlock();
@@ -82,7 +83,7 @@ extern(C) {
 	void   input_mousemode(int mode);
 	void   input_update();
 
-	input_binding *input_binding_new(const char *name, const char *def);
+	input_binding *input_binding_new(const(char) *name, const(char) *def);
 	void           input_binding_del(input_binding *ib);
 
 
