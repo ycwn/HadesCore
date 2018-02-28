@@ -9,8 +9,10 @@
 
 #include "gr/limits.h"
 #include "gr/graphics.h"
-#include "gr/rendertarget.h"
+#include "gr/pixelformat.h"
 #include "gr/vertexformat.h"
+#include "gr/surface.h"
+#include "gr/renderpass.h"
 #include "gr/vertexbuffer.h"
 #include "gr/uniformbuffer.h"
 #include "gr/shader.h"

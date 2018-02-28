@@ -26,7 +26,8 @@
 #define GPU_TEXTURE_CUBE_BINDING  2
 
 
-#define GPU_SHADER_ARGUMENTS    15
+#define GPU_SHADER_TEXTURES     16
+#define GPU_SHADER_ARGUMENTS    11
 #define GPU_OBJECT_ARGUMENTS    4
 #define GPU_MATERIAL_TEXTURES   16
 #define GPU_MATERIAL_ARGUMENTS  7
@@ -63,6 +64,8 @@ typedef struct gpu_uniform_shader {
 
 	vec4 arg[GPU_SHADER_ARGUMENTS]; // Free shader parameters
 
+	uint textures[GPU_SHADER_TEXTURES]; // Texture IDs
+
 } gpu_uniform_shader;
 
 
@@ -90,9 +93,9 @@ typedef struct gpu_uniform_material {
 	vec4 emission;
 	vec4 material;
 
-	uint textures[GPU_MATERIAL_TEXTURES]; // Texture IDs
-
 	vec4 arg[GPU_MATERIAL_ARGUMENTS]; // Free material parameters
+
+	uint textures[GPU_MATERIAL_TEXTURES]; // Texture IDs
 
 } gpu_uniform_material;
 

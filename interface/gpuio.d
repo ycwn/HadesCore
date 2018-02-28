@@ -25,7 +25,8 @@ enum GPU_TEXTURE_3D_BINDING   = 1;
 enum GPU_TEXTURE_CUBE_BINDING = 2;
 
 
-enum GPU_SHADER_ARGUMENTS   = 15;
+enum GPU_SHADER_TEXTURES    = 16;
+enum GPU_SHADER_ARGUMENTS   = 11;
 enum GPU_OBJECT_ARGUMENTS   = 4;
 enum GPU_MATERIAL_TEXTURES  = 16;
 enum GPU_MATERIAL_ARGUMENTS = 7;
@@ -62,6 +63,8 @@ struct gpu_uniform_shader {
 
 	vec4[GPU_SHADER_ARGUMENTS] arg; // Free shader parameters
 
+	uint[GPU_SHADER_TEXTURES] textures; // Texture IDs
+
 }
 
 
@@ -89,9 +92,9 @@ struct gpu_uniform_material {
 	vec4 emission;
 	vec4 material;
 
-	uint[GPU_MATERIAL_TEXTURES] textures; // Texture IDs
-
 	vec4[GPU_MATERIAL_ARGUMENTS] arg; // Free material parameters
+
+	uint[GPU_MATERIAL_TEXTURES] textures; // Texture IDs
 
 }
 

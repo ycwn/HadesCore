@@ -9,11 +9,10 @@
 
 #include "gr/limits.h"
 #include "gr/graphics.h"
-#include "gr/vertexformat.h"
 #include "gr/pixelformat.h"
-#include "gr/framebuffer.h"
-#include "gr/rendertarget.h"
+#include "gr/vertexformat.h"
 #include "gr/surface.h"
+#include "gr/renderpass.h"
 #include "gr/vertexbuffer.h"
 #include "gr/uniformbuffer.h"
 #include "gr/shader.h"
@@ -203,10 +202,9 @@ graphics *gr_create()
 	reset();
 
 	gr_pixelformat_create(&gfx);
-	gr_rendertarget_create(&gfx);
-	gr_framebuffer_create(&gfx);
-	gr_shader_create(&gfx);
 	gr_surface_create(&gfx);
+	gr_renderpass_create(&gfx);
+	gr_shader_create(&gfx);
 	gr_command_create();
 	gr_commandqueue_create();
 	gr_vertexbuffer_create(&gfx);
@@ -231,10 +229,9 @@ void gr_destroy()
 	gr_vertexbuffer_destroy();
 	gr_commandqueue_destroy();
 	gr_command_destroy();
-	gr_surface_destroy();
 	gr_shader_destroy();
-	gr_framebuffer_destroy();
-	gr_rendertarget_destroy();
+	gr_renderpass_destroy();
+	gr_surface_destroy();
 	gr_pixelformat_destroy();
 
 	destroy();
@@ -306,8 +303,7 @@ bool gr_set_video()
 		!init_vulkan()      || !init_device()          || !init_swapchain()   ||
 		!init_commandpool() || !init_synchronization() || !init_descriptors() ||
 
-		!gr_pixelformat_init() ||
-		!gr_framebuffer_init()) {
+		!gr_pixelformat_init()) {
 
 		log_e("graphics: Graphics initialization sequence failed");
 		destroy();
@@ -333,16 +329,15 @@ void gr_submit()
 		gfx.vk.signal_image_ready, NULL, (uint*)&gfx.vk.swapchain_curr);
 
 	gr_commandqueue_consume();
-	gr_framebuffer_select();
 	gr_surface_update_cache();
 
 	VkCommandBuffer   curr_cmd    = gfx.vk.command_buffer[gfx.vk.swapchain_curr];
 	VkFence           curr_fence  = gfx.vk.command_fence[gfx.vk.swapchain_curr];
-	gr_rendertarget  *curr_target = NULL;
+	gr_renderpass    *curr_target = NULL;
 	gr_shader        *curr_shader = NULL;
 	gr_vertexbuffer  *curr_vbo    = NULL;
 	gr_uniformbuffer *curr_ubo    = NULL;
-	//core::surface   *curr_tex    = NULL;
+	gr_uniformbuffer *curr_mat    = NULL;
 
 	if (vkWaitForFences(gfx.vk.gpu, 1, &curr_fence, VK_TRUE, 1000000000) != VK_SUCCESS)
 		return;
@@ -363,19 +358,19 @@ void gr_submit()
 
 		const gr_command *cmd = *cq;
 
-		if (curr_target != cmd->shader->rt) {
+		if (curr_target != cmd->shader->rp) {
 
 			if (curr_target != NULL)
 				vkCmdEndRenderPass(curr_cmd);
 
-			curr_target = cmd->shader->rt;
+			curr_target = cmd->shader->rp;
 			curr_shader = NULL;
 
 			VkRenderPassBeginInfo rpi = { 0 };
 
 			rpi.sType                    = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 			rpi.renderPass               = curr_target->renderpass;
-			rpi.framebuffer              = curr_target->framebuffer;
+			rpi.framebuffer              = curr_target->framebuffer[gfx.vk.swapchain_curr];
 			rpi.renderArea.offset.x      = 0;
 			rpi.renderArea.offset.y      = 0;
 			rpi.renderArea.extent.width  = curr_target->width;
@@ -392,7 +387,7 @@ void gr_submit()
 			curr_shader = cmd->shader;
 			curr_vbo    = NULL;
 			curr_ubo    = NULL;
-//			curr_tex    = NULL;
+			curr_mat    = NULL;
 
 			vkCmdBindPipeline(curr_cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, curr_shader->pipeline);
 

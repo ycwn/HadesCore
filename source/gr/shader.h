@@ -7,7 +7,7 @@
 typedef struct gr_shader {
 
 	gr_vertexformat   vf;
-	gr_rendertarget  *rt;
+	gr_renderpass    *rp;
 	gr_uniformbuffer  ub;
 
 	int stage;

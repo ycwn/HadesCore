@@ -11,8 +11,10 @@
 
 #include "gr/limits.h"
 #include "gr/graphics.h"
-#include "gr/rendertarget.h"
+#include "gr/pixelformat.h"
 #include "gr/vertexformat.h"
+#include "gr/surface.h"
+#include "gr/renderpass.h"
 #include "gr/uniformbuffer.h"
 #include "gr/shader.h"
 
@@ -22,7 +24,7 @@ struct metadata {
 	char shader_name[1024];
 	int  shader_stage;
 
-	char render_target[1024];
+	char render_pass[1024];
 
 // Input assembler control
 	int vertex_format;
@@ -159,11 +161,11 @@ gr_shader *gr_shader_load(const char *file)
 	if (!parse_metadata(ar_get_data(&ar, fd), ar_get_length(&ar, fd), &md))
 		return NULL;
 
-	gr_rendertarget *rt = gr_rendertarget_find(md.render_target);
+	gr_renderpass *rp = gr_renderpass_find(md.render_pass);
 
-	if (rt == NULL) {
+	if (rp == NULL) {
 
-		log_e("shader: Unknown rendertarget '%s'", md.render_target);
+		log_e("shader: Unknown renderpass '%s'", md.render_pass);
 		return NULL;
 
 	}
@@ -199,7 +201,7 @@ gr_shader *gr_shader_load(const char *file)
 
 	gr_shader *s = gr_shader_new(md.shader_name);
 
-	s->rt    = rt;
+	s->rp    = rp;
 	s->stage = md.shader_stage;
 
 	gr_vf_init(&s->vf, md.vertex_format);
@@ -222,11 +224,12 @@ gr_shader *gr_shader_load(const char *file)
 	gpu_uniform_shader ubs;
 
 	ubs.screen = simd4f_create(
-		rt->width, rt->height,
-		(float)rt->width  / (float)rt->height,
-		(float)rt->height / (float)rt->width);
+		rp->width, rp->height,
+		(float)rp->width  / (float)rp->height,
+		(float)rp->height / (float)rp->width);
 
-	memcpy(&ubs.arg, s->args, sizeof(ubs.arg));
+	memcpy(&ubs.arg,      s->args,            sizeof(ubs.arg));
+	memcpy(&ubs.textures, s->rp->surface_ids, sizeof(ubs.textures));
 
 	gr_uniformbuffer_commit(&s->ub, &ubs, sizeof(ubs));
 
@@ -348,7 +351,7 @@ bool parse_metadata(const char *src, size_t len, struct metadata *md)
 		float x, y, z, w;
 
 		if      (sscanf(buf, ".sh %1024s\n", s) >= 1) strcpy(md->shader_name,   s);
-		else if (sscanf(buf, ".rt %1024s\n", s) >= 1) strcpy(md->render_target, s);
+		else if (sscanf(buf, ".rt %1024s\n", s) >= 1) strcpy(md->render_pass, s);
 
 		else if (sscanf(buf, ".st %d\n",    &a)     >= 1) { md->shader_stage    = a; }
 		else if (sscanf(buf, ".vf %d\n",    &a)     >= 1) { md->vertex_format   = a; }
@@ -627,15 +630,15 @@ bool create_pipeline(gr_shader *s, const struct metadata *md)
 
 	viewport.x        = 0.0f;
 	viewport.y        = 0.0f;
-	viewport.width    = (float)s->rt->width;
-	viewport.height   = (float)s->rt->height;
+	viewport.width    = (float)s->rp->width;
+	viewport.height   = (float)s->rp->height;
 	viewport.minDepth = 0.0f;
 	viewport.maxDepth = 1.0f;
 
 	scissor.offset.x      = 0;
 	scissor.offset.y      = 0;
-	scissor.extent.width  = s->rt->width;
-	scissor.extent.height = s->rt->height;
+	scissor.extent.width  = s->rp->width;
+	scissor.extent.height = s->rp->height;
 
 	pvsci.sType         = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
 	pvsci.viewportCount = 1;
@@ -722,7 +725,7 @@ bool create_pipeline(gr_shader *s, const struct metadata *md)
 	gpci.pColorBlendState    = &pcbsci;
 	gpci.pDynamicState       = NULL; //FIXME: Set Dynamic state here
 	gpci.layout              = gfx->vk.pipeline_layout;
-	gpci.renderPass          = s->rt->renderpass;
+	gpci.renderPass          = s->rp->renderpass;
 	gpci.subpass             = 0;
 	gpci.basePipelineHandle  = NULL;
 	gpci.basePipelineIndex   = -1;

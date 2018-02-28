@@ -23,7 +23,7 @@ public {
 	import hades.graphics_graphics;
 	import hades.graphics_limits;
 	import hades.graphics_pixelformat;
-	import hades.graphics_rendertarget;
+	import hades.graphics_renderpass;
 	import hades.graphics_shader;
 	import hades.graphics_surface;
 	import hades.graphics_uniformbuffer;

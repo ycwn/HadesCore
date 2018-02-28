@@ -4,14 +4,14 @@ import hades.core_list;
 
 import hades.graphics_types;
 import hades.graphics_graphics;
-import hades.graphics_rendertarget;
+import hades.graphics_renderpass;
 import hades.graphics_vertexformat;
 
 
 struct gr_shader {
 
 	gr_vertexformat  vf;
-	gr_rendertarget *rt;
+	gr_renderpass   *rp;
 
 	int stage;
 
