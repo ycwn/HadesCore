@@ -18,6 +18,7 @@
 #include "gr/shader.h"
 #include "gr/command.h"
 #include "gr/commandqueue.h"
+#include "gr/postprocessor.h"
 
 
 GR_VKSYM_DEF(vkAllocateCommandBuffers);
@@ -209,6 +210,7 @@ graphics *gr_create()
 	gr_command_create();
 	gr_commandqueue_create();
 	gr_vertexbuffer_create(&gfx);
+	gr_postprocessor_create();
 
 	for (int n=0; n < countof(instance_extensions); n++)
 		gr_request_instance_extension(instance_extensions[n]);
@@ -225,6 +227,7 @@ graphics *gr_create()
 void gr_destroy()
 {
 
+	gr_postprocessor_destroy();
 	gr_vertexbuffer_destroy();
 	gr_commandqueue_destroy();
 	gr_command_destroy();
@@ -303,7 +306,8 @@ bool gr_set_video()
 		!init_vulkan()      || !init_device()          || !init_swapchain()   ||
 		!init_commandpool() || !init_synchronization() || !init_descriptors() ||
 
-		!gr_pixelformat_init()) {
+		!gr_pixelformat_init() ||
+		!gr_postprocessor_init()) {
 
 		log_e("graphics: Graphics initialization sequence failed");
 		destroy();
@@ -328,6 +332,7 @@ void gr_submit()
 		gfx.vk.swapchain, 1000000000,
 		gfx.vk.signal_image_ready, NULL, (uint*)&gfx.vk.swapchain_curr);
 
+	gr_postprocessor_commit();
 	gr_commandqueue_consume();
 	gr_surface_update_cache();
 
