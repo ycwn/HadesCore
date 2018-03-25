@@ -513,11 +513,7 @@ bool gr_surface_bind(gr_surface *s)
 		if (block < 0)
 			return false; // Oh shit
 
-		watch("%d", block);
-
 		int entry = ffsl(~texture_cache_bitmap[block] & mask) - 1; // Find the first unset bit in the mask
-
-		watch("%d", entry);
 
 		s->index = block * 64 + entry;
 		s->id    = s->index - begin;
@@ -564,6 +560,24 @@ void gr_surface_unbind(gr_surface *s)
 	s->index = -1;
 
 	texture_cache_update = true;
+
+}
+
+
+
+void gr_surface_lock(gr_surface *s)
+{
+
+	s->lock++;
+
+}
+
+
+
+void gr_surface_unlock(gr_surface *s)
+{
+
+	s->lock--;
 
 }
 

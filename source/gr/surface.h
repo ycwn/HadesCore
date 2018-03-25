@@ -41,6 +41,7 @@ typedef struct gr_surface {
 
 	int id;
 	int index;
+	int lock;
 
 	uint width;
 	uint height;
@@ -78,9 +79,11 @@ void        gr_surface_del(gr_surface *s);
 bool gr_surface_alloc(gr_surface *s, const gr_pixelformat *pf, uint width, uint height, uint depth, uint mipmaps, uint layers, uint usage, uint flags);
 bool gr_surface_copy( gr_surface *s, const void *pixels, size_t len, uint offset[], uint mipmap[], uint layer[], uint count);
 
-bool gr_surface_bind(gr_surface *s);
+bool gr_surface_bind(  gr_surface *s);
 void gr_surface_rebind(gr_surface *s);
 void gr_surface_unbind(gr_surface *s);
+void gr_surface_lock(  gr_surface *s);
+void gr_surface_unlock(gr_surface *s);
 bool gr_surface_set_environment(gr_surface *s);
 
 gr_surface *gr_surface_find(const char *name);
