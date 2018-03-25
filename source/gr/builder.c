@@ -123,6 +123,10 @@ static symbol *parser_symbols     = NULL;
 static int     parser_symbols_num = 0;
 static int     parser_symbols_max = 0;
 
+static char **include_paths     = NULL;
+static int    include_paths_num = 0;
+static int    include_paths_max = 0;
+
 
 #define PARSE_ERROR(msg, ...)                                      \
 	do {                                                       \
@@ -146,6 +150,25 @@ void gr_builder_create()
 
 void gr_builder_destroy()
 {
+
+	for (int n=0; n < parser_symbols_num; n++)
+		free(parser_symbols[n].name);
+
+	free(parser_symbols);
+
+	parser_symbols     = NULL;
+	parser_symbols_num = 0;
+	parser_symbols_max = 0;
+
+	for (int n=0; n < include_paths_num; n++)
+		free(include_paths[n]);
+
+	free(include_paths);
+
+	include_paths     = NULL;
+	include_paths_num = 0;
+	include_paths_max = 0;
+
 }
 
 
@@ -183,10 +206,45 @@ void gr_builder_undef(const char *name)
 
 
 
+bool gr_builder_has_include_path(const char *dir)
+{
+
+	for (int n=0; n < include_paths_num; n++)
+		if (!strcmp(include_paths[n], dir))
+			return true;
+
+	return false;
+
+}
+
+
+
+bool gr_builder_add_include_path(const char *dir)
+{
+
+	if (gr_builder_has_include_path(dir))
+		return false;
+
+	if (include_paths_num >= include_paths_max) {
+
+		include_paths_max += 16;
+		include_paths      = realloc(include_paths, sizeof(char**) * include_paths_max);
+
+	}
+
+	include_paths[include_paths_num++] = strdup(dir);
+
+	return true;
+
+}
+
+
+
 bool gr_builder_parse(const char *file)
 {
 
 	return gr_builder_parsefd(blob_open(file, BLOB_REV_LAST));
+
 }
 
 
