@@ -467,11 +467,174 @@ struct VkPhysicalDeviceMemoryProperties {
     VkMemoryHeap[VK_MAX_MEMORY_HEAPS]  memoryHeaps;
 }
 
+struct VkSpecializationMapEntry {
+    uint    constantID;
+    uint    offset;
+    size_t  size;
+}
+
+struct VkSpecializationInfo {
+    uint                             mapEntryCount;
+    const(VkSpecializationMapEntry) *pMapEntries;
+    size_t                           dataSize;
+    const(void)                     *pData;
+}
+
+struct VkPipelineShaderStageCreateInfo {
+    VkStructureType                   sType;
+    const(void)                      *pNext;
+    VkPipelineShaderStageCreateFlags  flags;
+    VkShaderStageFlagBits             stage;
+    VkShaderModule                    shmod;
+    const(char)                      *pName;
+    const(VkSpecializationInfo)      *pSpecializationInfo;
+}
+
+struct VkVertexInputBindingDescription {
+    uint               binding;
+    uint               stride;
+    VkVertexInputRate  inputRate;
+}
+
 struct VkVertexInputAttributeDescription {
     uint      location;
     uint      binding;
     VkFormat  format;
     uint      offset;
+}
+
+struct VkPipelineVertexInputStateCreateInfo {
+    VkStructureType                           sType;
+    const(void)                              *pNext;
+    VkPipelineVertexInputStateCreateFlags     flags;
+    uint                                      vertexBindingDescriptionCount;
+    const(VkVertexInputBindingDescription)   *pVertexBindingDescriptions;
+    uint                                      vertexAttributeDescriptionCount;
+    const(VkVertexInputAttributeDescription) *pVertexAttributeDescriptions;
+}
+
+struct VkPipelineInputAssemblyStateCreateInfo {
+    VkStructureType                          sType;
+    const(void)                             *pNext;
+    VkPipelineInputAssemblyStateCreateFlags  flags;
+    VkPrimitiveTopology                      topology;
+    VkBool32                                 primitiveRestartEnable;
+}
+
+struct VkPipelineTessellationStateCreateInfo {
+    VkStructureType                         sType;
+    const(void)                            *pNext;
+    VkPipelineTessellationStateCreateFlags  flags;
+    uint                                    patchControlPoints;
+}
+
+struct VkViewport {
+    float  x;
+    float  y;
+    float  width;
+    float  height;
+    float  minDepth;
+    float  maxDepth;
+}
+
+struct VkOffset2D {
+    int  x;
+    int  y;
+}
+
+struct VkExtent2D {
+    uint  width;
+    uint  height;
+}
+
+struct VkRect2D {
+    VkOffset2D  offset;
+    VkExtent2D  extent;
+}
+
+struct VkPipelineViewportStateCreateInfo {
+    VkStructureType                     sType;
+    const(void)                        *pNext;
+    VkPipelineViewportStateCreateFlags  flags;
+    uint                                viewportCount;
+    const(VkViewport)                  *pViewports;
+    uint                                scissorCount;
+    const(VkRect2D)                    *pScissors;
+}
+
+struct VkPipelineRasterizationStateCreateInfo {
+    VkStructureType                          sType;
+    const(void)                             *pNext;
+    VkPipelineRasterizationStateCreateFlags  flags;
+    VkBool32                                 depthClampEnable;
+    VkBool32                                 rasterizerDiscardEnable;
+    VkPolygonMode                            polygonMode;
+    VkCullModeFlags                          cullMode;
+    VkFrontFace                              frontFace;
+    VkBool32                                 depthBiasEnable;
+    float                                    depthBiasConstantFactor;
+    float                                    depthBiasClamp;
+    float                                    depthBiasSlopeFactor;
+    float                                    lineWidth;
+}
+
+struct VkPipelineMultisampleStateCreateInfo {
+    VkStructureType                        sType;
+    const(void)                           *pNext;
+    VkPipelineMultisampleStateCreateFlags  flags;
+    VkSampleCountFlagBits                  rasterizationSamples;
+    VkBool32                               sampleShadingEnable;
+    float                                  minSampleShading;
+    const(VkSampleMask)                   *pSampleMask;
+    VkBool32                               alphaToCoverageEnable;
+    VkBool32                               alphaToOneEnable;
+}
+
+struct VkStencilOpState {
+    VkStencilOp  failOp;
+    VkStencilOp  passOp;
+    VkStencilOp  depthFailOp;
+    VkCompareOp  compareOp;
+    uint         compareMask;
+    uint         writeMask;
+    uint         reference;
+}
+
+struct VkPipelineDepthStencilStateCreateInfo {
+    VkStructureType                         sType;
+    const(void)                            *pNext;
+    VkPipelineDepthStencilStateCreateFlags  flags;
+    VkBool32                                depthTestEnable;
+    VkBool32                                depthWriteEnable;
+    VkCompareOp                             depthCompareOp;
+    VkBool32                                depthBoundsTestEnable;
+    VkBool32                                stencilTestEnable;
+    VkStencilOpState                        front;
+    VkStencilOpState                        back;
+    float                                   minDepthBounds;
+    float                                   maxDepthBounds;
+}
+
+struct VkPipelineColorBlendAttachmentState {
+    VkBool32               blendEnable;
+    VkBlendFactor          srcColorBlendFactor;
+    VkBlendFactor          dstColorBlendFactor;
+    VkBlendOp              colorBlendOp;
+    VkBlendFactor          srcAlphaBlendFactor;
+    VkBlendFactor          dstAlphaBlendFactor;
+    VkBlendOp              alphaBlendOp;
+    VkColorComponentFlags  colorWriteMask;
+}
+
+struct VkPipelineColorBlendStateCreateInfo {
+    VkStructureType                             sType;
+    const(void)                                *pNext;
+    VkPipelineColorBlendStateCreateFlags        flags;
+    VkBool32                                    logicOpEnable;
+    VkLogicOp                                   logicOp;
+    uint                                        attachmentCount;
+    const(VkPipelineColorBlendAttachmentState) *pAttachments;
+    float[4]                                    blendConstants;
 }
 
 union VkClearColorValue {
