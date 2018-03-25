@@ -53,6 +53,7 @@ static inline float clampf(float x, float min, float max) { return minf(maxf(x, 
 #define countof(x)    (sizeof(x) / sizeof((x)[0]))
 #define mzero(x)      memset((x),  0, sizeof(x))
 #define szero(x)      memset(&(x), 0, sizeof(x))
+#define mfill(x, v)   do { for (int n=0; n < countof((x)); n++) (x)[n] = (v); } while (0)
 #define bitmask(t, n) (((t) (-((n) != 0)))  & (((t) -1) >> ((sizeof(t) * 8) - (n))))
 
 
