@@ -9,6 +9,7 @@
 #define GR_DEVICE_EXT_MAX    64
 #define GR_ATTACHMENTS_MAX    8
 #define GR_COMMANDS_MAX     128
+#define GR_VERTEXATTR_MAX    16
 
 
 #endif

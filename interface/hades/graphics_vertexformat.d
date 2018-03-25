@@ -47,7 +47,7 @@ struct gr_vertexformat {
 extern(C) {
 
 	void gr_vf_init(             gr_vertexformat *vf, uint format);
-	uint gr_vf_build_descriptors(gr_vertexformat *vf, VkVertexInputAttributeDescription *vd);
+	uint gr_vf_build_descriptors(gr_vertexformat *vf, VkVertexInputAttributeDescription[GR_VERTEXATTR_MAX] vd);
 
 }
 

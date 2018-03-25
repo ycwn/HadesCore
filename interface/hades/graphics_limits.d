@@ -5,4 +5,5 @@ enum GR_INSTANCE_EXT_MAX =  64;
 enum GR_DEVICE_EXT_MAX   =  64;
 enum GR_ATTACHMENTS_MAX  =   8;
 enum GR_COMMANDS_MAX     = 128;
+enum GR_VERTEXATTR_MAX   =  16;
 

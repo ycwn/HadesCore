@@ -54,7 +54,7 @@ typedef struct gr_vertexformat {
 
 
 void gr_vf_init(             gr_vertexformat *vf, uint format);
-uint gr_vf_build_descriptors(gr_vertexformat *vf, VkVertexInputAttributeDescription *vd);
+uint gr_vf_build_descriptors(gr_vertexformat *vf, VkVertexInputAttributeDescription vd[GR_VERTEXATTR_MAX]);
 
 
 #endif
