@@ -3,23 +3,11 @@
 import argparse
 import io
 import os
+import re
 import subprocess
 import sys
 import tempfile
 
-
-VULKAN_H = "/usr/include/vulkan/vulkan.h"
-
-VK_TRUE  = 1
-VK_FALSE = 0
-
-SECTION_VERT = 0
-SECTION_TESC = 1
-SECTION_TESE = 2
-SECTION_GEOM = 3
-SECTION_FRAG = 4
-SECTION_COMP = 5
-SECTION_NUM  = 6
 
 GR_V2 = 0x0000
 GR_V3 = 0x0001
@@ -33,6 +21,109 @@ GR_B2 = 0x0080
 GR_B4 = 0x0180
 GR_B6 = 0x0380
 GR_B8 = 0x0780
+
+GR_DISABLED = -1  # Generic
+GR_ENABLED  =  0
+
+GR_POINTS             = 0  # Vertex Topology
+GR_LINES              = 1
+GR_LINES_ADJ          = 2
+GR_LINE_STRIP         = 3
+GR_LINE_STRIP_ADJ     = 4
+GR_TRIANGLES          = 5
+GR_TRIANGLES_ADJ      = 6
+GR_TRIANGLE_STRIP     = 7
+GR_TRIANGLE_STRIP_ADJ = 8
+GR_TRIANGLE_FAN       = 9
+GR_PATCHES            = 10
+
+GR_NONE           = 0  # Rasterizer face rendering mode
+GR_FRONT          = 1
+GR_BACK           = 2
+GR_FRONT_AND_BACK = 3
+
+GR_POINT = 0  # Rasterizer polygon fill mode
+GR_LINE  = 1
+GR_FILL  = 2
+
+GR_NEVER    = 0  # Comparator functions
+GR_LESS     = 1
+GR_EQUAL    = 2
+GR_LEQUAL   = 3
+GR_GREATER  = 4
+GR_NOTEQUAL = 7
+GR_GEQUAL   = 8
+GR_ALWAYS   = 9
+
+GR_KEEP      = 0  # Stencil Ops
+GR_RESET     = 1
+GR_REPLACE   = 2
+GR_INCR      = 3
+GR_INCR_WRAP = 4
+GR_DECR      = 5
+GR_DECR_WRAP = 6
+GR_INVERT    = 7
+
+GR_RGB       = 0  # Color channels
+GR_ALPHA     = 1
+GR_RGB_ALPHA = 2
+
+GR_R = 1 << 0  # Color components
+GR_G = 1 << 1
+GR_B = 1 << 2
+GR_A = 1 << 3
+
+GR_ADD     = 0  # Blending equations
+GR_SUB     = 1
+GR_SUB_REV = 2
+GR_MIN     = 3
+GR_MAX     = 4
+
+GR_ZERO                     = 0  # Blending functions
+GR_ONE                      = 1
+GR_SRC_COLOR                = 2
+GR_ONE_MINUS_SRC_COLOR      = 3
+GR_DST_COLOR                = 4
+GR_ONE_MINUS_DST_COLOR      = 5
+GR_SRC_ALPHA                = 6
+GR_ONE_MINUS_SRC_ALPHA      = 7
+GR_DST_ALPHA                = 8
+GR_ONE_MINUS_DST_ALPHA      = 9
+GR_CONSTANT_COLOR           = 10
+GR_ONE_MINUS_CONSTANT_COLOR = 11
+GR_CONSTANT_ALPHA           = 12
+GR_ONE_MINUS_CONSTANT_ALPHA = 13
+GR_SRC_ALPHA_SATURATE       = 14
+GR_SRC1_COLOR               = 15
+GR_ONE_MINUS_SRC1_COLOR     = 16
+GR_SRC1_ALPHA               = 17
+GR_ONE_MINUS_SRC1_ALPHA     = 18
+
+GR_CLEAR    = 0  # Logic Ops
+GR_AND      = 1
+GR_AND_REV  = 2
+GR_COPY     = 3
+GR_AND_INV  = 4
+GR_NOP      = 5
+GR_XOR      = 6
+GR_OR       = 7
+GR_NOR      = 8
+GR_EQV      = 9
+GR_INV      = 10
+GR_OR_REV   = 11
+GR_COPY_INV = 12
+GR_OR_INV   = 13
+GR_NAND     = 14
+GR_SET      = 15
+
+GR_SHADER_VERTEX           = 0  # Shader stages
+GR_SHADER_TESSELATION_CTRL = 1
+GR_SHADER_TESSELATION_EVAL = 2
+GR_SHADER_GEOMETRY         = 3
+GR_SHADER_FRAGMENT         = 4
+GR_SHADER_COMPUTE          = 5
+GR_SHADER_MAX              = 6
+
 
 
 KEYWORD_ENUM = [
@@ -121,19 +212,6 @@ for n, var in enumerate(KEYWORD_ENUM):
 	globals()[var] = n
 
 
-##
-# Impoprt symbols from vulkan.h
-#
-with open(VULKAN_H, 'r') as vk:
-	for line in vk:
-		if '=' in line:
-			s = line.index('=')
-			v = line[s + 1:]
-			c = v.index(',') if ',' in v else -1
-			try:    globals()[line[:s].strip()] = int(v[:c].strip(), 0)
-			except: continue
-
-
 KEYWORD_LIST = {
 
 # Main directives
@@ -220,165 +298,165 @@ KEYWORD_LIST = {
 
 
 def BLEND_MODE(x):
-	_ = {   K_DISABLED:         VK_BLEND_OP_MAX_ENUM,
-		K_ADD:              VK_BLEND_OP_ADD,
-		K_SUBTRACT:         VK_BLEND_OP_SUBTRACT,
-		K_REVERSE_SUBTRACT: VK_BLEND_OP_REVERSE_SUBTRACT,
-		K_MIN:              VK_BLEND_OP_MIN,
-		K_MAX:              VK_BLEND_OP_MAX
+	_ = {   K_DISABLED:         GR_DISABLED,
+		K_ADD:              GR_ADD,
+		K_SUBTRACT:         GR_SUB,
+		K_REVERSE_SUBTRACT: GR_SUB_REV,
+		K_MIN:              GR_MIN,
+		K_MAX:              GR_MAX
 	}
 	return _[x] if x in _ else -1
 
 
 def BLEND_SRC(x):
-	_ = {   K_DISABLED:              VK_BLEND_FACTOR_MAX_ENUM,
-		K_CONST_ALPHA:           VK_BLEND_FACTOR_CONSTANT_ALPHA,
-		K_CONST_COLOR:           VK_BLEND_FACTOR_CONSTANT_COLOR,
-		K_DST_ALPHA:             VK_BLEND_FACTOR_DST_ALPHA,
-		K_DST_COLOR:             VK_BLEND_FACTOR_DST_COLOR,
-		K_ONE:                   VK_BLEND_FACTOR_ONE,
-		K_ONE_MINUS_CONST_ALPHA: VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_ALPHA,
-		K_ONE_MINUS_CONST_COLOR: VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_COLOR,
-		K_ONE_MINUS_DST_ALPHA:   VK_BLEND_FACTOR_ONE_MINUS_DST_ALPHA,
-		K_ONE_MINUS_DST_COLOR:   VK_BLEND_FACTOR_ONE_MINUS_DST_COLOR,
-		K_ONE_MINUS_SRC_ALPHA:   VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
-		K_ONE_MINUS_SRC_COLOR:   VK_BLEND_FACTOR_ONE_MINUS_SRC_COLOR,
-		K_SRC_ALPHA:             VK_BLEND_FACTOR_SRC_ALPHA,
-		K_SRC_ALPHA_SATURATE:    VK_BLEND_FACTOR_SRC_ALPHA_SATURATE,
-		K_SRC_COLOR:             VK_BLEND_FACTOR_SRC_COLOR,
-		K_ZERO:                  VK_BLEND_FACTOR_ZERO
+	_ = {   K_DISABLED:              GR_DISABLED,
+		K_CONST_ALPHA:           GR_CONSTANT_ALPHA,
+		K_CONST_COLOR:           GR_CONSTANT_COLOR,
+		K_DST_ALPHA:             GR_DST_ALPHA,
+		K_DST_COLOR:             GR_DST_COLOR,
+		K_ONE:                   GR_ONE,
+		K_ONE_MINUS_CONST_ALPHA: GR_ONE_MINUS_CONSTANT_ALPHA,
+		K_ONE_MINUS_CONST_COLOR: GR_ONE_MINUS_CONSTANT_COLOR,
+		K_ONE_MINUS_DST_ALPHA:   GR_ONE_MINUS_DST_ALPHA,
+		K_ONE_MINUS_DST_COLOR:   GR_ONE_MINUS_DST_COLOR,
+		K_ONE_MINUS_SRC_ALPHA:   GR_ONE_MINUS_SRC_ALPHA,
+		K_ONE_MINUS_SRC_COLOR:   GR_ONE_MINUS_SRC_COLOR,
+		K_SRC_ALPHA:             GR_SRC_ALPHA,
+		K_SRC_ALPHA_SATURATE:    GR_SRC_ALPHA_SATURATE,
+		K_SRC_COLOR:             GR_SRC_COLOR,
+		K_ZERO:                  GR_ZERO
 	}
 	return _[x] if x in _ else -1
 
 
 def BLEND_DST(x):
-	_ = {   K_DISABLED:              VK_BLEND_FACTOR_MAX_ENUM,
-		K_CONST_ALPHA:           VK_BLEND_FACTOR_CONSTANT_ALPHA,
-		K_CONST_COLOR:           VK_BLEND_FACTOR_CONSTANT_COLOR,
-		K_DST_ALPHA:             VK_BLEND_FACTOR_DST_ALPHA,
-		K_DST_COLOR:             VK_BLEND_FACTOR_DST_COLOR,
-		K_ONE:                   VK_BLEND_FACTOR_ONE,
-		K_ONE_MINUS_CONST_ALPHA: VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_ALPHA,
-		K_ONE_MINUS_CONST_COLOR: VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_COLOR,
-		K_ONE_MINUS_DST_ALPHA:   VK_BLEND_FACTOR_ONE_MINUS_DST_ALPHA,
-		K_ONE_MINUS_DST_COLOR:   VK_BLEND_FACTOR_ONE_MINUS_DST_COLOR,
-		K_ONE_MINUS_SRC_ALPHA:   VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
-		K_ONE_MINUS_SRC_COLOR:   VK_BLEND_FACTOR_ONE_MINUS_SRC_COLOR,
-		K_SRC_ALPHA:             VK_BLEND_FACTOR_SRC_ALPHA,
-		K_SRC_COLOR:             VK_BLEND_FACTOR_SRC_COLOR,
-		K_ZERO:                  VK_BLEND_FACTOR_ZERO
+	_ = {   K_DISABLED:              GR_DISABLED,
+		K_CONST_ALPHA:           GR_CONSTANT_ALPHA,
+		K_CONST_COLOR:           GR_CONSTANT_COLOR,
+		K_DST_ALPHA:             GR_DST_ALPHA,
+		K_DST_COLOR:             GR_DST_COLOR,
+		K_ONE:                   GR_ONE,
+		K_ONE_MINUS_CONST_ALPHA: GR_ONE_MINUS_CONSTANT_ALPHA,
+		K_ONE_MINUS_CONST_COLOR: GR_ONE_MINUS_CONSTANT_COLOR,
+		K_ONE_MINUS_DST_ALPHA:   GR_ONE_MINUS_DST_ALPHA,
+		K_ONE_MINUS_DST_COLOR:   GR_ONE_MINUS_DST_COLOR,
+		K_ONE_MINUS_SRC_ALPHA:   GR_ONE_MINUS_SRC_ALPHA,
+		K_ONE_MINUS_SRC_COLOR:   GR_ONE_MINUS_SRC_COLOR,
+		K_SRC_ALPHA:             GR_SRC_ALPHA,
+		K_SRC_COLOR:             GR_SRC_COLOR,
+		K_ZERO:                  GR_ZERO
 	}
 	return _[x] if x in _ else -1
 
 
 def BLEND_LOGICOP(x):
-	_ = {   K_LOGIC_OFF:    VK_LOGIC_OP_MAX_ENUM,
-		K_LOGIC_CLEAR:  VK_LOGIC_OP_CLEAR,
-		K_LOGIC_AND:    VK_LOGIC_OP_AND,
-		K_LOGIC_ANDREV: VK_LOGIC_OP_AND_REVERSE,
-		K_LOGIC_BLT:    VK_LOGIC_OP_COPY,
-		K_LOGIC_ANDINV: VK_LOGIC_OP_AND_INVERTED,
-		K_LOGIC_NOP:    VK_LOGIC_OP_NO_OP,
-		K_LOGIC_XOR:    VK_LOGIC_OP_XOR,
-		K_LOGIC_OR:     VK_LOGIC_OP_OR,
-		K_LOGIC_NOR:    VK_LOGIC_OP_NOR,
-		K_LOGIC_EQV:    VK_LOGIC_OP_EQUIVALENT,
-		K_LOGIC_INV:    VK_LOGIC_OP_INVERT,
-		K_LOGIC_ORREV:  VK_LOGIC_OP_OR_REVERSE,
-		K_LOGIC_BLTINV: VK_LOGIC_OP_COPY_INVERTED,
-		K_LOGIC_ORINV:  VK_LOGIC_OP_OR_INVERTED,
-		K_LOGIC_NAND:   VK_LOGIC_OP_NAND,
-		K_LOGIC_SET:    VK_LOGIC_OP_SET
+	_ = {   K_LOGIC_OFF:    GR_DISABLED,
+		K_LOGIC_CLEAR:  GR_CLEAR,
+		K_LOGIC_AND:    GR_AND,
+		K_LOGIC_ANDREV: GR_AND_REV,
+		K_LOGIC_BLT:    GR_COPY,
+		K_LOGIC_ANDINV: GR_AND_INV,
+		K_LOGIC_NOP:    GR_NOP,
+		K_LOGIC_XOR:    GR_XOR,
+		K_LOGIC_OR:     GR_OR,
+		K_LOGIC_NOR:    GR_NOR,
+		K_LOGIC_EQV:    GR_EQV,
+		K_LOGIC_INV:    GR_INV,
+		K_LOGIC_ORREV:  GR_OR_REV,
+		K_LOGIC_BLTINV: GR_COPY_INV,
+		K_LOGIC_ORINV:  GR_OR_INV,
+		K_LOGIC_NAND:   GR_NAND,
+		K_LOGIC_SET:    GR_SET
 	}
 	return _[x] if x in _ else -1
 
 
 def DEPTH_MODE(x):
-	_ = {   K_DISABLED: VK_COMPARE_OP_MAX_ENUM,
-		K_NEVER:    VK_COMPARE_OP_NEVER,
-		K_LESS:     VK_COMPARE_OP_LESS,
-		K_EQUAL:    VK_COMPARE_OP_EQUAL,
-		K_LEQUAL:   VK_COMPARE_OP_LESS_OR_EQUAL,
-		K_GREATER:  VK_COMPARE_OP_GREATER,
-		K_NEQUAL:   VK_COMPARE_OP_NOT_EQUAL,
-		K_GEQUAL:   VK_COMPARE_OP_GREATER_OR_EQUAL,
-		K_ALWAYS:   VK_COMPARE_OP_ALWAYS
+	_ = {   K_DISABLED: GR_DISABLED,
+		K_NEVER:    GR_NEVER,
+		K_LESS:     GR_LESS,
+		K_EQUAL:    GR_EQUAL,
+		K_LEQUAL:   GR_LEQUAL,
+		K_GREATER:  GR_GREATER,
+		K_NEQUAL:   GR_NOTEQUAL,
+		K_GEQUAL:   GR_GEQUAL,
+		K_ALWAYS:   GR_ALWAYS
 	}
 	return _[x] if x in _ else -1
 
 
 def PRIMITIVE_TOPOLOGY(x):
-	_ = {   K_POINTS:        VK_PRIMITIVE_TOPOLOGY_POINT_LIST,
-		K_LINES:         VK_PRIMITIVE_TOPOLOGY_LINE_LIST,
-		K_LINESTRIP:     VK_PRIMITIVE_TOPOLOGY_LINE_STRIP,
-		K_TRIANGLES:     VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
-		K_TRISTRIP:      VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP,
-		K_TRIFAN:        VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN,
-		K_LINES_ADJ:     VK_PRIMITIVE_TOPOLOGY_LINE_LIST_WITH_ADJACENCY,
-		K_LINESTRIP_ADJ: VK_PRIMITIVE_TOPOLOGY_LINE_STRIP_WITH_ADJACENCY,
-		K_TRIANGLES_ADJ: VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_WITH_ADJACENCY,
-		K_TRISTRIP_ADJ:  VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY,
-		K_PATCHES:       VK_PRIMITIVE_TOPOLOGY_PATCH_LIST
+	_ = {   K_POINTS:        GR_POINTS,
+		K_LINES:         GR_LINES,
+		K_LINESTRIP:     GR_LINE_STRIP,
+		K_TRIANGLES:     GR_TRIANGLES,
+		K_TRISTRIP:      GR_TRIANGLE_STRIP,
+		K_TRIFAN:        GR_TRIANGLE_FAN,
+		K_LINES_ADJ:     GR_LINES_ADJ,
+		K_LINESTRIP_ADJ: GR_LINE_STRIP_ADJ,
+		K_TRIANGLES_ADJ: GR_TRIANGLES_ADJ,
+		K_TRISTRIP_ADJ:  GR_TRIANGLE_STRIP_ADJ,
+		K_PATCHES:       GR_PATCHES
 	}
 	return _[x] if x in _ else -1
 
 
 def RASTER_MODE(x):
-	_ = {   K_NONE:  VK_CULL_MODE_FRONT_AND_BACK,
-		K_FRONT: VK_CULL_MODE_BACK_BIT,
-		K_BACK:  VK_CULL_MODE_FRONT_BIT,
-		K_BOTH:  VK_CULL_MODE_NONE
+	_ = {   K_NONE:  GR_NONE,
+		K_FRONT: GR_FRONT,
+		K_BACK:  GR_BACK,
+		K_BOTH:  GR_FRONT_AND_BACK
 	}
 	return _[x] if x in _ else -1
 
 
 def SECTION_MASK(x):
-	_ = {   K_DOT_VERTEX:   SECTION_VERT,
-		K_DOT_TESSCTRL: SECTION_TESC,
-		K_DOT_TESSEVAL: SECTION_TESE,
-		K_DOT_GEOMETRY: SECTION_GEOM,
-		K_DOT_FRAGMENT: SECTION_FRAG,
-		K_DOT_COMPUTE:  SECTION_COMP
+	_ = {   K_DOT_VERTEX:   GR_SHADER_VERTEX,
+		K_DOT_TESSCTRL: GR_SHADER_TESSELATION_CTRL,
+		K_DOT_TESSEVAL: GR_SHADER_TESSELATION_EVAL,
+		K_DOT_GEOMETRY: GR_SHADER_GEOMETRY,
+		K_DOT_FRAGMENT: GR_SHADER_FRAGMENT,
+		K_DOT_COMPUTE:  GR_SHADER_COMPUTE
 	}
 	return _[x] if x in _ else -1
 
 
 def STENCIL_MODE(x): return DEPTH_MODE(x)
 def STENCIL_OP(x):
-	_ = {   K_KEEP:    VK_STENCIL_OP_KEEP,
-		K_ZERO:    VK_STENCIL_OP_ZERO,
-		K_REPLACE: VK_STENCIL_OP_REPLACE,
-		K_INCWRAP: VK_STENCIL_OP_INCREMENT_AND_CLAMP,
-		K_DECWRAP: VK_STENCIL_OP_DECREMENT_AND_CLAMP,
-		K_INVERT:  VK_STENCIL_OP_INVERT,
-		K_INC:     VK_STENCIL_OP_INCREMENT_AND_WRAP,
-		K_DEC:     VK_STENCIL_OP_DECREMENT_AND_WRAP
+	_ = {   K_KEEP:    GR_KEEP,
+		K_ZERO:    GR_RESET,
+		K_REPLACE: GR_REPLACE,
+		K_INCWRAP: GR_INCR,
+		K_DECWRAP: GR_DECR,
+		K_INVERT:  GR_INVERT,
+		K_INC:     GR_INCR_WRAP,
+		K_DEC:     GR_DECR_WRAP
 	}
 	return _[x] if x in _ else -1
 
 
 def WRITE_CHANNEL(x):
-	_ = {   K_RED_ON:    VK_COLOR_COMPONENT_R_BIT,
-		K_RED_OFF:   VK_COLOR_COMPONENT_R_BIT,
-		K_GREEN_ON:  VK_COLOR_COMPONENT_G_BIT,
-		K_GREEN_OFF: VK_COLOR_COMPONENT_G_BIT,
-		K_BLUE_ON:   VK_COLOR_COMPONENT_B_BIT,
-		K_BLUE_OFF:  VK_COLOR_COMPONENT_B_BIT,
-		K_ALPHA_ON:  VK_COLOR_COMPONENT_A_BIT,
-		K_ALPHA_OFF: VK_COLOR_COMPONENT_A_BIT,
-		K_COLOR_ON:  VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT,
-		K_COLOR_OFF: VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT
+	_ = {   K_RED_ON:    GR_R,
+		K_RED_OFF:   GR_R,
+		K_GREEN_ON:  GR_G,
+		K_GREEN_OFF: GR_G,
+		K_BLUE_ON:   GR_B,
+		K_BLUE_OFF:  GR_B,
+		K_ALPHA_ON:  GR_A,
+		K_ALPHA_OFF: GR_A,
+		K_COLOR_ON:  GR_R | GR_G | GR_B,
+		K_COLOR_OFF: GR_R | GR_G | GR_B
 
 	}
 	return _[x] if x in _ else -1
 
 
 def WRITE_MODE(x):
-	_ = {   K_RED_ON:   VK_TRUE, K_RED_OFF:   VK_FALSE,
-		K_GREEN_ON: VK_TRUE, K_GREEN_OFF: VK_FALSE,
-		K_BLUE_ON:  VK_TRUE, K_BLUE_OFF:  VK_FALSE,
-		K_ALPHA_ON: VK_TRUE, K_ALPHA_OFF: VK_FALSE,
-		K_COLOR_ON: VK_TRUE, K_COLOR_OFF: VK_FALSE
+	_ = {   K_RED_ON:   1, K_RED_OFF:   0,
+		K_GREEN_ON: 1, K_GREEN_OFF: 0,
+		K_BLUE_ON:  1, K_BLUE_OFF:  0,
+		K_ALPHA_ON: 1, K_ALPHA_OFF: 0,
+		K_COLOR_ON: 1, K_COLOR_OFF: 0
 	}
 	return _[x] if x in _ else -1
 
@@ -387,7 +465,7 @@ def WRITE_MODE(x):
 class shader_data:
 
 	sections = [ ]
-	binary   = [ ]
+	module   = [ ]
 	active   = [ ]
 	metadata = ""
 
@@ -398,18 +476,18 @@ class shader_data:
 	# Input assembler control
 	input_vertex_format      = -1
 	input_primitive_topology = -1
-	input_primitive_restart  = VK_FALSE
+	input_primitive_restart  = 0
 
 	# Rasterizer control
-	raster_discard          = VK_FALSE
+	raster_discard          = 0
 	raster_cullmode         = RASTER_MODE(K_BOTH)
-	raster_depth_bias       = VK_FALSE
+	raster_depth_bias       = 0
 	raster_depth_bias_const = 0.0
 	raster_depth_bias_slope = 0.0
 	raster_depth_bias_clamp = 0.0
 
 	# Depth testing control
-	depth_write = VK_TRUE
+	depth_write = 1
 	depth_func  = DEPTH_MODE(K_DISABLED)
 
 	# Stencil test control
@@ -432,9 +510,9 @@ class shader_data:
 
 
 	def __init__(self):
-		self.sections = [ ""   for n in xrange(SECTION_NUM) ]
-		self.binary   = [ ""   for n in xrange(SECTION_NUM) ]
-		self.active   = [ True for n in xrange(SECTION_NUM) ]
+		self.sections = [ ""   for n in xrange(GR_SHADER_MAX) ]
+		self.module   = [ ""   for n in xrange(GR_SHADER_MAX) ]
+		self.active   = [ True for n in xrange(GR_SHADER_MAX) ]
 
 
 
@@ -654,10 +732,10 @@ def shader_preprocess(shader, source, includes):
 	def process_section(token, state, count):
 
 		if count < 1:
-			shader.active = [ True for n in xrange(SECTION_NUM) ]
+			shader.active = [ True for n in xrange(GR_SHADER_MAX) ]
 
 		else:
-			shader.active = [ False for n in xrange(SECTION_NUM) ]
+			shader.active = [ False for n in xrange(GR_SHADER_MAX) ]
 
 			for n in xrange(len(token)):
 
@@ -753,10 +831,10 @@ def shader_preprocess(shader, source, includes):
 			perror("error: %d: #write expects at least one argument." % linenum);
 
 		if state[0] == K_DEPTH_ON:
-			shader.depth_write = VK_TRUE
+			shader.depth_write = 1
 
 		elif state[0] == K_DEPTH_OFF:
-			shader.depth_write = VK_FALSE
+			shader.depth_write = 0
 
 		else:
 			atch = token[0]
@@ -883,19 +961,19 @@ def shader_preprocess(shader, source, includes):
 			directive = process_directive(text)
 
 		if directive < 0:
-			if shader.active[SECTION_VERT]: shader.sections[SECTION_VERT] += text
-			if shader.active[SECTION_TESC]: shader.sections[SECTION_TESC] += text
-			if shader.active[SECTION_TESE]: shader.sections[SECTION_TESE] += text
-			if shader.active[SECTION_GEOM]: shader.sections[SECTION_GEOM] += text
-			if shader.active[SECTION_FRAG]: shader.sections[SECTION_FRAG] += text
-			if shader.active[SECTION_COMP]: shader.sections[SECTION_COMP] += text
+			if shader.active[GR_SHADER_VERTEX]:           shader.sections[GR_SHADER_VERTEX]           += text
+			if shader.active[GR_SHADER_TESSELATION_CTRL]: shader.sections[GR_SHADER_TESSELATION_CTRL] += text
+			if shader.active[GR_SHADER_TESSELATION_EVAL]: shader.sections[GR_SHADER_TESSELATION_EVAL] += text
+			if shader.active[GR_SHADER_GEOMETRY]:         shader.sections[GR_SHADER_GEOMETRY]         += text
+			if shader.active[GR_SHADER_FRAGMENT]:         shader.sections[GR_SHADER_FRAGMENT]         += text
+			if shader.active[GR_SHADER_COMPUTE]:          shader.sections[GR_SHADER_COMPUTE]          += text
 
-		shader.sections[SECTION_VERT] += "\n"
-		shader.sections[SECTION_TESC] += "\n"
-		shader.sections[SECTION_TESE] += "\n"
-		shader.sections[SECTION_GEOM] += "\n"
-		shader.sections[SECTION_FRAG] += "\n"
-		shader.sections[SECTION_COMP] += "\n"
+		shader.sections[GR_SHADER_VERTEX]           += "\n"
+		shader.sections[GR_SHADER_TESSELATION_CTRL] += "\n"
+		shader.sections[GR_SHADER_TESSELATION_EVAL] += "\n"
+		shader.sections[GR_SHADER_GEOMETRY]         += "\n"
+		shader.sections[GR_SHADER_FRAGMENT]         += "\n"
+		shader.sections[GR_SHADER_COMPUTE]          += "\n"
 
 		text = ""
 
@@ -905,10 +983,18 @@ def shader_preprocess(shader, source, includes):
 
 def shader_compile(shader, compiler, options, keep):
 
+	def comment_replacer(match):
+		s = match.group(0)
+		return " " if s.startswith('/') else s
+
+	comment_pattern = re.compile(
+		r'//.*?$|/\*.*?\*/|\'(?:\\.|[^\\\'])*\'|"(?:\\.|[^\\"])*"',
+		re.DOTALL | re.MULTILINE)
+
 	section_name = [ "vert",  "tesc",  "tese",  "geom",  "frag",  "comp" ]
 	section_ext  = [ ".vert", ".tesc", ".tese", ".geom", ".frag", ".comp" ]
 
-	for n in xrange(SECTION_NUM):
+	for n in xrange(GR_SHADER_MAX):
 
 		if not "main" in shader.sections[n]:
 			continue
@@ -932,8 +1018,15 @@ def shader_compile(shader, compiler, options, keep):
 
 			if subprocess.call(cmd, shell=True) == 0:
 
+				spirv = ""
+
 				with open(spv_file, 'r') as spv:
-					shader.binary[n] = spv.read()
+					 for line in re.sub(comment_pattern, comment_replacer, spv.read()).split("\n"):
+						line = line.strip()
+						if line:
+							spirv += line + "\n"
+
+				shader.module[n] = spirv.strip()
 
 			else:
 				perror("compiler failed")
@@ -948,72 +1041,46 @@ def shader_compile(shader, compiler, options, keep):
 
 
 
-def shader_build_metadata(shader):
-
-	metadata  = ""
-	metadata += "\n"
-	metadata += ".sh %s\n" % shader.shader_name
-	metadata += ".st %s\n" % shader.shader_stage
-	metadata += ".rt %s\n" % shader.render_target
-	metadata += "\n"
-	metadata += ".vf %d\n"    % shader.input_vertex_format
-	metadata += ".tp %d %d\n" % (shader.input_primitive_topology, shader.input_primitive_restart)
-	metadata += "\n"
-	metadata += ".rd %d\n"          % shader.raster_discard
-	metadata += ".rc %d\n"          % shader.raster_cullmode
-	metadata += ".db %d %f %f %f\n" % (shader.raster_depth_bias, shader.raster_depth_bias_slope, shader.raster_depth_bias_const, shader.raster_depth_bias_clamp)
-	metadata += "\n"
-	metadata += ".dw %d\n" % shader.depth_write
-	metadata += ".df %d\n" % shader.depth_func
-	metadata += "\n"
-	metadata += ".sf %d %d\n" % (shader.stencil_fail[0],      shader.stencil_fail[1])
-	metadata += ".sp %d %d\n" % (shader.stencil_pass[0],      shader.stencil_pass[1])
-	metadata += ".sd %d %d\n" % (shader.stencil_depthfail[0], shader.stencil_depthfail[1])
-	metadata += ".sc %d %d\n" % (shader.stencil_func[0],      shader.stencil_func[1])
-	metadata += ".sm %d %d\n" % (shader.stencil_mask[0],      shader.stencil_mask[1])
-	metadata += ".sw %d %d\n" % (shader.stencil_write[0],     shader.stencil_write[1])
-	metadata += ".sr %d %d\n" % (shader.stencil_ref[0],       shader.stencil_ref[1])
-	metadata += "\n"
-
-	for a, m  in shader.color_mask:  metadata += ".wm %s %d\n" % (a, m)
-	for a, bc in shader.blend_color: metadata += ".bc %s %d %d %d\n" % (a, bc[0], bc[1], bc[2])
-	for a, ba in shader.blend_alpha: metadata += ".ba %s %d %d %d\n" % (a, ba[0], ba[1], ba[2])
-
-	metadata += "\n"
-	metadata += ".bl %d\n"          % shader.blend_logic_op
-	metadata += ".cc %f %f %f %f\n" % (shader.blend_const[0], shader.blend_const[1], shader.blend_const[2], shader.blend_const[3])
-	metadata += "\n"
-
-	return metadata
-
-
-
 def shader_package(shader, output):
 
+	data = [
+		".sh %s %d" % (shader.shader_name, shader.shader_stage),
+
+		".vf %d"    % shader.input_vertex_format,
+		".vt %d %d" % (shader.input_primitive_topology, shader.input_primitive_restart),
+
+		".rp %s"    % shader.render_target,
+		".rm %d %d" % (shader.raster_cullmode, GR_FILL),
+
+		".db %d %f %f %f" % (shader.raster_depth_bias, shader.raster_depth_bias_slope, shader.raster_depth_bias_const, shader.raster_depth_bias_clamp),
+		".dw %d"          % shader.depth_write,
+		".df %d"          % shader.depth_func,
+
+		".so %d %d %d %d" % (GR_FRONT, shader.stencil_fail[0], shader.stencil_pass[0], shader.stencil_depthfail[0]),
+		".sf %d %d %d"    % (GR_FRONT, shader.stencil_func[0], shader.stencil_mask[0]),
+		".sw %d %d"       % (GR_FRONT, shader.stencil_write[0]),
+		".sr %d %d"       % (GR_FRONT, shader.stencil_ref[0]),
+
+		".so %d %d %d %d" % (GR_BACK,  shader.stencil_fail[1], shader.stencil_pass[1], shader.stencil_depthfail[1]),
+		".sf %d %d %d"    % (GR_BACK,  shader.stencil_func[1], shader.stencil_mask[1]),
+		".sw %d %d"       % (GR_BACK,  shader.stencil_write[1]),
+		".sr %d %d"       % (GR_BACK,  shader.stencil_ref[1])
+	] + [
+		".cm %s %d" % (a, m) for a, m in shader.color_mask
+	] + [
+		".bf %s %d %d %d %d" % (a, GR_RGB,   bc[0], bc[1], bc[2]) for a, bc in shader.blend_color.iteritems()
+	] + [
+		".bf %s %d %d %d %d" % (a, GR_ALPHA, ba[0], ba[1], ba[2]) for a, ba in shader.blend_alpha.iteritems()
+	] + [
+		".op %d"          % shader.blend_logic_op,
+		".cc %f %f %f %f" % (shader.blend_const[0], shader.blend_const[1], shader.blend_const[2], shader.blend_const[3])
+	] + [
+		".sp %d %d\n%s" % (n, shader.module[n].count(",") + 1, shader.module[n]) for n in xrange(GR_SHADER_MAX) if len(shader.module[n]) > 0
+	]
+
 	with open(output, 'w') as ar:
+		ar.write("\n".join(data))
 
-		ar.write("!<arch>\n")
-
-		metadata     = shader_build_metadata(shader)
-		metadata_len = len(metadata)
-
-		ar.write("%-16.16s%12d%6d%6d%8d%10d`\n" % (".shader/", 0, 1000, 1000, 666, metadata_len))
-		ar.write(metadata)
-
-		if metadata_len & 1:
-			ar.write("\n")
-
-		for n, x in enumerate([ ".vert/", ".tesc/", ".tese/", ".geom/", ".frag/", ".comp/" ]):
-
-			binary     = shader.binary[n]
-			binary_len = len(binary)
-
-			if binary_len > 0:
-				ar.write("%-16.16s%12d%6d%6d%8d%10d`\n" % (x, 0, 1000, 1000, 666, binary_len))
-				ar.write(binary)
-
-				if binary_len & 1:
-					ar.write("\n")
 
 
 argv   = parse_command_line()

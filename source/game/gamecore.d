@@ -28,7 +28,11 @@ void main(string[] argv)
 
 	gr_builder_define("SCREEN_WIDTH",  1024);
 	gr_builder_define("SCREEN_HEIGHT", 576);
-	gr_builder_parse("shaders/renderer.conf");
+
+	gr_builder_add_include_path("shaders");
+
+	if (!gr_builder_parse("shaders/renderer.conf"))
+		return;
 
 	alias entity!(component_light,  component_ai, component_sprite, component_transform) enemy_willowisp;
 	alias entity!(component_ai,     component_sprite, component_transform)               enemy_bandit;
@@ -64,7 +68,7 @@ void main(string[] argv)
 
 	log_printf(LOG_DEBUG, "SEE YOU AT THE PARTY, RICHTER!: %s", engine.buildinfo.user);
 
-	gr_shader_load("shaders/suzanne.a");
+	gr_postprocessor_attach(gr_shader_find("scanline"));
 
 	auto scene   = sg_scenegraph_new("root");
 	auto camera  = sg_camera_new("eye");

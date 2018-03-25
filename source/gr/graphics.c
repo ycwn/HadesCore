@@ -203,12 +203,12 @@ graphics *gr_create()
 
 	gr_pixelformat_create(&gfx);
 	gr_surface_create(&gfx);
+	gr_uniformbuffer_create(&gfx);
 	gr_renderpass_create(&gfx);
 	gr_shader_create(&gfx);
 	gr_command_create();
 	gr_commandqueue_create();
 	gr_vertexbuffer_create(&gfx);
-	gr_uniformbuffer_create(&gfx);
 
 	for (int n=0; n < countof(instance_extensions); n++)
 		gr_request_instance_extension(instance_extensions[n]);
@@ -225,12 +225,12 @@ graphics *gr_create()
 void gr_destroy()
 {
 
-	gr_uniformbuffer_destroy();
 	gr_vertexbuffer_destroy();
 	gr_commandqueue_destroy();
 	gr_command_destroy();
 	gr_shader_destroy();
 	gr_renderpass_destroy();
+	gr_uniformbuffer_destroy();
 	gr_surface_destroy();
 	gr_pixelformat_destroy();
 

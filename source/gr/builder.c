@@ -11,8 +11,11 @@
 #include "gr/limits.h"
 #include "gr/graphics.h"
 #include "gr/pixelformat.h"
+#include "gr/vertexformat.h"
 #include "gr/surface.h"
 #include "gr/renderpass.h"
+#include "gr/uniformbuffer.h"
+#include "gr/shader.h"
 #include "gr/builder.h"
 
 
@@ -116,6 +119,7 @@ static int  parse_number(    stb_lexer *lex, int *i, float *f);
 static bool parse_format(    stb_lexer *lex, int *format);
 static bool parse_surface(   stb_lexer *lex);
 static bool parse_renderpass(stb_lexer *lex);
+static bool parse_shader(    stb_lexer *lex);
 static bool parse_pipeline(  stb_lexer *lex);
 
 
@@ -750,6 +754,35 @@ bool parse_renderpass(stb_lexer *lex)
 
 
 
+bool parse_shader(stb_lexer *lex)
+{
+
+	if (parse_token(lex) != CLEX_dqstring)
+		PARSE_ERROR_UNEXPECT(CLEX_dqstring);
+
+	gr_shader *s = gr_shader_load(lex->string, true);
+
+	for (int n=0; s == NULL && n < include_paths_num; n++) {
+
+		char buffer[strlen(include_paths[n]) + lex->string_len + 2];
+		sprintf(buffer, "%s/%s", include_paths[n], lex->string);
+
+		s = gr_shader_load(buffer, true);
+
+	}
+
+	if (s == NULL)
+		PARSE_ERROR("Shader not found under any include path");
+
+	if (parse_token(lex) != ';')
+		PARSE_ERROR_UNEXPECT(';');
+
+	return true;
+
+}
+
+
+
 bool parse_pipeline(stb_lexer *lex)
 {
 
@@ -760,6 +793,7 @@ bool parse_pipeline(stb_lexer *lex)
 		if      (token < 0)             return true;
 		else if (token == K_SURFACE)    { if (!parse_surface(lex))    return false; }
 		else if (token == K_RENDERPASS) { if (!parse_renderpass(lex)) return false; }
+		else if (token == K_SHADER)     { if (!parse_shader(lex))     return false; }
 		else
 			return false;
 	}

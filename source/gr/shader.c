@@ -6,7 +6,6 @@
 #include "core/list.h"
 #include "core/blob.h"
 #include "core/logger.h"
-#include "core/archive.h"
 #include "core/variable.h"
 
 #include "gr/limits.h"
@@ -19,74 +18,25 @@
 #include "gr/shader.h"
 
 
-struct metadata {
-
-	char shader_name[1024];
-	int  shader_stage;
-
-	char render_pass[1024];
-
-// Input assembler control
-	int vertex_format;
-	int primitive_topology;
-	int primitive_restart;
-
-// Rasterizer control
-	int   raster_discard;
-	int   raster_cullmode;
-	int   raster_depth_bias;
-	float raster_depth_bias_slope;
-	float raster_depth_bias_const;
-	float raster_depth_bias_clamp;
-
-// Depth testing control
-	int depth_write;
-	int depth_func;
-
-// Stencil test control: front and back
-	int stencil_fail[2];
-	int stencil_pass[2];
-	int stencil_depthfail[2];
-	int stencil_func[2];
-	int stencil_mask[2];
-	int stencil_write[2];
-	int stencil_ref[2];
-
-// Color blend control, per attachment
-	struct {
-
-		char name[1024];
-
-		int color_mask;
-
-		int blend_color_func;
-		int blend_color_src;
-		int blend_color_dst;
-
-		int blend_alpha_func;
-		int blend_alpha_src;
-		int blend_alpha_dst;
-
-	} attachment[GR_ATTACHMENTS_MAX];
-
-	int attachments;
-
-// Master blend control
-	int   blend_logic_op;
-	float blend_color[4];
-
-};
-
-
 static list      shaders = LIST_INIT(&shaders, NULL);
 static graphics *gfx     = NULL;
 
-static void           reset(  gr_shader *s);
-static void           destroy(gr_shader *s);
-static bool           parse_metadata(const char *src, size_t len, struct metadata *md);
-static bool           parse_spirv(   const char *src, size_t len, u32 *out, size_t *words);
-static VkShaderModule compile_spirv( const void *buf, size_t len);
-static bool           create_pipeline(gr_shader *s, const struct metadata *md);
+static void reset(  gr_shader *s);
+static void destroy(gr_shader *s);
+
+
+#define SHADER_PARSER_ERROR(msg, ...)                          \
+	do {                                                   \
+		log_e("shader: error: " msg, ## __VA_ARGS__);  \
+		goto fail;                                     \
+	} while (0)
+
+
+#define SHADER_PARSER_CHECK(sh)                                              \
+	do {                                                                 \
+		if (sh == NULL)                                              \
+			SHADER_PARSER_ERROR("No active shader definition");  \
+	} while (0)
 
 
 
@@ -111,7 +61,7 @@ void gr_shader_destroy()
 
 
 
-gr_shader *gr_shader_new(const char *name)
+gr_shader *gr_shader_new(const char *name, int priority)
 {
 
 	gr_shader *s = malloc(sizeof(gr_shader) + strlen(name) + 1);
@@ -120,6 +70,8 @@ gr_shader *gr_shader_new(const char *name)
 
 	strcpy((char*)s->name, name);
 	reset(s);
+
+	s->priority = priority;
 
 	list_init(  &s->node, s);
 	list_append(&shaders, &s->node);
@@ -130,111 +82,212 @@ gr_shader *gr_shader_new(const char *name)
 
 
 
-gr_shader *gr_shader_load(const char *file)
+gr_shader *gr_shader_load(const char *file, bool finalize)
 {
-
-	archive ar;
 
 	log_i("shader: Loading %s", file);
 
-	if (!ar_open(&ar, file)) {
+	int id = blob_open(file, BLOB_REV_LAST);
+
+	if (id < 0) {
 
 		log_e("shader: Failed to open '%s'", file);
 		return NULL;
 	}
 
-	int fd = ar_get(&ar, ".shader");
+	gr_shader *s = gr_shader_parse(blob_get_data(id), blob_get_length(id), finalize);
 
-	if (fd < 0) {
-
-		log_e("shader: Failed to open '%s': invalid format", file);
+	if (s == NULL)
 		return NULL;
-
-	}
-
-	struct metadata  md;
-	VkShaderModule   stage[6];
-	const char      *stage_name[6]={
-		".vert", ".tesc", ".tese", ".geom", ".frag", ".comp"
-	};
-
-	if (!parse_metadata(ar_get_data(&ar, fd), ar_get_length(&ar, fd), &md))
-		return NULL;
-
-	gr_renderpass *rp = gr_renderpass_find(md.render_pass);
-
-	if (rp == NULL) {
-
-		log_e("shader: Unknown renderpass '%s'", md.render_pass);
-		return NULL;
-
-	}
-
-	for (int n=0; n < countof(stage); n++) {
-
-		int fd = ar_get(&ar, stage_name[n]);
-
-		stage[n] = NULL;
-
-		if (fd < 0)
-			continue;
-
-		log_i("shader: Compiling section %s", stage_name[n]);
-
-		const void *buf = ar_get_data(&ar, fd);
-		size_t      len = ar_get_length(&ar, fd);
-
-		size_t words = 0;
-		u32    spirv[(len + sizeof(u32) - 1) / sizeof(u32)];
-
-		if (parse_spirv(buf, len, spirv, &words))
-			stage[n] = compile_spirv(spirv, sizeof(u32) * words);
-
-		if (stage[n] == NULL) {
-
-			log_e("shader: Failed");
-			return NULL;
-
-		}
-
-	}
-
-	gr_shader *s = gr_shader_new(md.shader_name);
-
-	s->rp    = rp;
-	s->stage = md.shader_stage;
-
-	gr_vf_init(&s->vf, md.vertex_format);
-
-	s->vertex   = stage[0];
-	s->tessctrl = stage[1];
-	s->tesseval = stage[2];
-	s->geometry = stage[3];
-	s->fragment = stage[4];
-	s->compute  = stage[5];
-
-	if (!create_pipeline(s, &md)) {
-
-		log_e("shader: Failed to create pipeline");
-		gr_shader_del(s);
-		return NULL;
-
-	}
-
-	gpu_uniform_shader ubs;
-
-	ubs.screen = simd4f_create(
-		rp->width, rp->height,
-		(float)rp->width  / (float)rp->height,
-		(float)rp->height / (float)rp->width);
-
-	memcpy(&ubs.arg,      s->args,            sizeof(ubs.arg));
-	memcpy(&ubs.textures, s->rp->surface_ids, sizeof(ubs.textures));
-
-	gr_uniformbuffer_commit(&s->ub, &ubs, sizeof(ubs));
 
 	log_i("shader: Done");
+
 	return s;
+}
+
+
+
+gr_shader *gr_shader_parse(const char *src, size_t len, bool finalize)
+{
+
+	int         ll = 0;
+	int         n  = 0;
+	const char *s;
+	const char *ss;
+
+	char  t[len + 1];
+	int   a, b, c, d, e;
+	float x, y, z, w;
+
+	gr_shader     *sh = NULL;
+	gr_renderpass *rp = NULL;
+
+	for (n=0; n < len; n += ll + 1) {
+
+		s  = src + n;
+		ll = strcspn(s, "\n");
+
+		if (sscanf(s, ".sh %s %d", t, &a) >= 1) {
+
+			if (sh != NULL)
+				SHADER_PARSER_ERROR("Unexpected shader declaration");
+
+			if (gr_shader_find(t) != NULL)
+				SHADER_PARSER_ERROR("Shader '%s' already exists", t);
+
+			sh = gr_shader_new(t, a);
+
+		} else if (sscanf(s, ".vf %d", &a) >= 1) {
+
+			SHADER_PARSER_CHECK(sh);
+			gr_shader_vertex_format(sh, a);
+
+		} else if (sscanf(s, ".vt %d %d", &a, &b) >= 1) {
+
+			SHADER_PARSER_CHECK(sh);
+			gr_shader_vertex_topology(sh, a, b);
+
+		} else if (sscanf(s, ".rp %s", t) >= 1) {
+
+			SHADER_PARSER_CHECK(sh);
+
+			rp = gr_renderpass_find(t);
+
+			if (rp == NULL)
+				SHADER_PARSER_ERROR("Renderpass '%s' does not exist", t);
+
+			gr_shader_renderpass(sh, rp, NULL);
+
+		} else if (sscanf(s, ".rm %d %d", &a, &b) >= 1) {
+
+			SHADER_PARSER_CHECK(sh);
+			gr_shader_rasterizer_mode(sh, a, b);
+
+		} else if (sscanf(s, ".db %d %f %f %f", &a, &x, &y, &z) >= 1) {
+
+			SHADER_PARSER_CHECK(sh);
+			gr_shader_depth_bias(sh, a, x, y, z);
+
+		} else if (sscanf(s, ".dw %d", &a) >= 1) {
+
+			SHADER_PARSER_CHECK(sh);
+			gr_shader_depth_write(sh, a);
+
+		} else if (sscanf(s, ".df %d", &a) >= 1) {
+
+			SHADER_PARSER_CHECK(sh);
+			gr_shader_depth_func(sh, a);
+
+		} else if (sscanf(s, ".so %d %d %d %d", &a, &b, &c, &d) >= 1) {
+
+			SHADER_PARSER_CHECK(sh);
+			gr_shader_stencil_op(sh, a, b, c, d);
+
+		} else if (sscanf(s, ".sf %d %d %u", &a, &b, &c) >= 1) {
+
+			SHADER_PARSER_CHECK(sh);
+			gr_shader_stencil_func(sh, a, b, c);
+
+		} else if (sscanf(s, ".sw %d %u", &a, &b) >= 1) {
+
+			SHADER_PARSER_CHECK(sh);
+			gr_shader_stencil_mask(sh, a, b);
+
+		} else if (sscanf(s, ".cm %d %d", &a, &b) >= 1) {
+
+			SHADER_PARSER_CHECK(sh);
+			gr_shader_blend_color_mask(sh, a, b);
+
+		} else if (sscanf(s, ".sr %d %u", &a, &b) >= 1) {
+
+			SHADER_PARSER_CHECK(sh);
+			gr_shader_stencil_ref(sh, a, b);
+
+		} else if (sscanf(s, ".bf %d %d %d %d %d", &a, &b, &c, &d, &e) >= 1) {
+
+			SHADER_PARSER_CHECK(sh);
+			gr_shader_blend_func(sh, a, b, c, d, e);
+
+		} else if (sscanf(s, ".op %d", &a) >= 1) {
+
+			SHADER_PARSER_CHECK(sh);
+			gr_shader_blend_logic_op(sh, a);
+
+		} else if (sscanf(s, ".cc %f %f %f %f", &x, &y, &z, &w) >= 1) {
+
+			SHADER_PARSER_CHECK(sh);
+			gr_shader_blend_color_ref(sh, x, y, z, w);
+
+		} else if (sscanf(s, ".sp %d %d", &a, &b) >= 1) {
+
+			SHADER_PARSER_CHECK(sh);
+
+			u32 spirv[b];
+
+			s += ll;
+
+			for (int k=0; k < b;) {
+
+				if (*s == '\n') {
+
+					n += ll + 1;
+
+					if (n >= len)
+						SHADER_PARSER_ERROR("Unexpected EOF!");
+
+					s  = src + n;
+					ll = strcspn(s, "\n");
+
+				} else if (*s == ',') {
+
+					s++;
+					continue;
+
+				}
+
+				spirv[k++] = strtoul(s, (char**)&ss, 0);
+
+				if (s == ss) {
+
+					n = s - src;
+					SHADER_PARSER_ERROR("Failed to parse SPIRV entry");
+
+				}
+
+				s = ss;
+
+			}
+
+			gr_shader_upload_spirv(sh, a, NULL, spirv, sizeof(spirv));
+
+		} else
+			log_w("shader: warning: Unknown directive: '%.*s'", ll, s);
+
+	}
+
+	SHADER_PARSER_CHECK(sh);
+
+	if (finalize && !gr_shader_compile(sh))
+		SHADER_PARSER_ERROR("Compilation failed");
+
+	return sh;
+
+fail:;
+	int line=1, col=0;
+
+	for (int m=0; m < n; m++)
+		if (src[m] == '\n') {
+
+			line++;
+			col = 0;
+
+		} else
+			col++;
+
+	log_e("shader: SPIRV parser stopped at %d:%d", line, col);
+	gr_shader_del(sh);
+
+	return NULL;
 
 }
 
@@ -256,6 +309,609 @@ void gr_shader_del(gr_shader *s)
 
 
 
+void gr_shader_defaults(gr_shader *s)
+{
+
+	s->pvisci.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+	s->piasci.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+	s->pvsci.sType  = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+	s->prsci.sType  = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+	s->pmsci.sType  = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+	s->pdssci.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+	s->pcbsci.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+
+	gr_shader_vertex_format(   s, GR_V2);
+	gr_shader_vertex_topology( s, GR_TRIANGLES, false);
+	gr_shader_renderpass(      s, NULL, NULL);
+	gr_shader_rasterizer_mode( s, GR_FRONT, GR_FILL);
+	gr_shader_multisampling(   s);
+	gr_shader_depth_clamp(     s, false);
+	gr_shader_depth_bias(      s, false, 0.0f, 0.0f, 0.0f);
+	gr_shader_depth_write(     s, true);
+	gr_shader_depth_boundcheck(s, false, 0.0f, 1.0f);
+	gr_shader_depth_func(      s, GR_DISABLED);
+	gr_shader_stencil_op(      s, GR_FRONT_AND_BACK, GR_KEEP, GR_KEEP, GR_KEEP);
+	gr_shader_stencil_func(    s, GR_FRONT_AND_BACK, GR_DISABLED, 0);
+	gr_shader_stencil_mask(    s, GR_FRONT_AND_BACK, 0);
+	gr_shader_stencil_ref(     s, GR_FRONT_AND_BACK, 0);
+	gr_shader_blend_func(      s, 0, GR_RGB_ALPHA, GR_DISABLED, GR_ONE, GR_ZERO);
+	gr_shader_blend_color_mask(s, 0, GR_R | GR_G | GR_B | GR_A);
+	gr_shader_blend_color_ref( s, 0.0f, 0.0f, 0.0f, 0.0f);
+	gr_shader_blend_logic_op(  s, GR_DISABLED);
+	gr_shader_upload_spirv(    s, GR_SHADER_VERTEX,           "main", NULL, 0);
+	gr_shader_upload_spirv(    s, GR_SHADER_TESSELATION_CTRL, "main", NULL, 0);
+	gr_shader_upload_spirv(    s, GR_SHADER_TESSELATION_EVAL, "main", NULL, 0);
+	gr_shader_upload_spirv(    s, GR_SHADER_GEOMETRY,         "main", NULL, 0);
+	gr_shader_upload_spirv(    s, GR_SHADER_FRAGMENT,         "main", NULL, 0);
+	gr_shader_upload_spirv(    s, GR_SHADER_COMPUTE,          "main", NULL, 0);
+
+}
+
+
+
+void gr_shader_vertex_format(gr_shader *s, int vf)
+{
+
+	gr_vf_init(&s->vf, vf);
+
+	s->vibd.binding   = 0;
+	s->vibd.stride    = s->vf.stride;
+	s->vibd.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+
+	s->viad_num = gr_vf_build_descriptors(&s->vf, &s->viad[0]);
+
+	s->pvisci.vertexBindingDescriptionCount   = 1;
+	s->pvisci.vertexAttributeDescriptionCount = s->viad_num;
+	s->pvisci.pVertexBindingDescriptions      = &s->vibd;
+	s->pvisci.pVertexAttributeDescriptions    = &s->viad[0];
+
+}
+
+
+
+void gr_shader_vertex_topology(gr_shader *s, int topology, bool restart)
+{
+
+	int top =
+		(topology == GR_POINTS)?              VK_PRIMITIVE_TOPOLOGY_POINT_LIST:
+		(topology == GR_LINES)?               VK_PRIMITIVE_TOPOLOGY_LINE_LIST:
+		(topology == GR_LINE_STRIP)?          VK_PRIMITIVE_TOPOLOGY_LINE_STRIP:
+		(topology == GR_TRIANGLES)?           VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST:
+		(topology == GR_TRIANGLE_STRIP)?      VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP:
+		(topology == GR_TRIANGLE_FAN)?        VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN:
+		(topology == GR_LINES_ADJ)?           VK_PRIMITIVE_TOPOLOGY_LINE_LIST_WITH_ADJACENCY:
+		(topology == GR_LINE_STRIP_ADJ)?      VK_PRIMITIVE_TOPOLOGY_LINE_STRIP_WITH_ADJACENCY:
+		(topology == GR_TRIANGLES_ADJ)?       VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_WITH_ADJACENCY:
+		(topology == GR_TRIANGLE_STRIP_ADJ)?  VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY:
+		(topology == GR_PATCHES)?             VK_PRIMITIVE_TOPOLOGY_PATCH_LIST: -1;
+
+	if (top < 0)
+		return;
+
+	s->piasci.topology               = top;
+	s->piasci.primitiveRestartEnable = restart? VK_TRUE: VK_FALSE;
+
+}
+
+
+
+void gr_shader_renderpass(gr_shader *s, gr_renderpass *rp, const VkRect2D *scissor)
+{
+
+	s->rp = rp;;
+
+	if (rp != NULL) {
+
+		s->viewport.x        = 0.0f;
+		s->viewport.y        = 0.0f;
+		s->viewport.width    = (float)rp->width;
+		s->viewport.height   = (float)rp->height;
+		s->viewport.minDepth = 0.0f; //FIXME: Get from renderpass
+		s->viewport.maxDepth = 1.0f; //FIXME: Get from renderpass
+
+		if (scissor == NULL) {
+
+			s->scissor.offset.x      = 0;
+			s->scissor.offset.y      = 0;
+			s->scissor.extent.width  = rp->width;
+			s->scissor.extent.height = rp->height;
+
+		} else
+			s->scissor = *scissor;
+
+		s->pcbas_num = rp->attachment_colors;
+
+	} else {
+
+		szero(s->viewport);
+		szero(s->scissor);
+
+		s->pcbas_num = 0;
+
+	}
+
+}
+
+
+
+void gr_shader_rasterizer_mode(gr_shader *s, int draw, int fill)
+{
+
+	int cull =
+		(draw == GR_DISABLED)?       VK_CULL_MODE_FRONT_AND_BACK:
+		(draw == GR_NONE)?           VK_CULL_MODE_FRONT_AND_BACK:
+		(draw == GR_FRONT)?          VK_CULL_MODE_BACK_BIT:
+		(draw == GR_BACK)?           VK_CULL_MODE_FRONT_BIT:
+		(draw == GR_FRONT_AND_BACK)? VK_CULL_MODE_NONE: -1;
+
+	int mode =
+		(fill == GR_POINT)? VK_POLYGON_MODE_POINT:
+		(fill == GR_LINE)?  VK_POLYGON_MODE_LINE:
+		(fill == GR_FILL)?  VK_POLYGON_MODE_FILL: -1;
+
+	if (cull < 0 || mode < 0)
+		return;
+
+	s->prsci.rasterizerDiscardEnable = (draw == GR_DISABLED)? VK_TRUE: VK_FALSE;
+	s->prsci.polygonMode             = mode;
+	s->prsci.cullMode                = cull;
+	s->prsci.frontFace               = VK_FRONT_FACE_CLOCKWISE;
+	s->prsci.lineWidth               = 1.0f;
+
+}
+
+
+
+void gr_shader_multisampling(gr_shader *s)
+{
+
+	s->pmsci.sampleShadingEnable  = VK_FALSE;
+	s->pmsci.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+
+}
+
+
+
+void gr_shader_depth_clamp(gr_shader *s, bool enable)
+{
+
+	s->prsci.depthClampEnable = enable? VK_TRUE: VK_FALSE;
+
+}
+
+
+
+void gr_shader_depth_bias(gr_shader *s, bool enable, float slope, float bias, float clamp)
+{
+
+	s->prsci.depthBiasEnable         = enable? VK_TRUE: VK_FALSE;
+	s->prsci.depthBiasConstantFactor = bias;
+	s->prsci.depthBiasSlopeFactor    = slope;
+	s->prsci.depthBiasClamp          = clamp;
+
+}
+
+
+
+void gr_shader_depth_write(gr_shader *s, bool enable)
+{
+
+	s->pdssci.depthWriteEnable = enable? VK_TRUE: VK_FALSE;
+
+}
+
+
+
+void gr_shader_depth_boundcheck(gr_shader *s, bool enable, float min, float max)
+{
+
+	s->pdssci.depthBoundsTestEnable = enable? VK_TRUE: VK_FALSE;
+	s->pdssci.minDepthBounds        = min;
+	s->pdssci.maxDepthBounds        = max;
+
+}
+
+
+
+void gr_shader_depth_func(gr_shader *s, int op)
+{
+
+	int cmp =
+		(op == GR_DISABLED)? VK_COMPARE_OP_NEVER:
+		(op == GR_NEVER)?    VK_COMPARE_OP_NEVER:
+		(op == GR_LESS)?     VK_COMPARE_OP_LESS:
+		(op == GR_EQUAL)?    VK_COMPARE_OP_EQUAL:
+		(op == GR_LEQUAL)?   VK_COMPARE_OP_LESS_OR_EQUAL:
+		(op == GR_GREATER)?  VK_COMPARE_OP_GREATER:
+		(op == GR_NOTEQUAL)? VK_COMPARE_OP_NOT_EQUAL:
+		(op == GR_GEQUAL)?   VK_COMPARE_OP_GREATER_OR_EQUAL:
+		(op == GR_ALWAYS)?   VK_COMPARE_OP_ALWAYS: -1;
+
+	if (cmp < 0)
+		return;
+
+	s->pdssci.depthTestEnable = (op == GR_DISABLED)? VK_FALSE: VK_TRUE;
+	s->pdssci.depthCompareOp  = cmp;
+
+}
+
+
+
+void gr_shader_stencil_op(gr_shader *s, int faces, int fail, int pass, int depthfail)
+{
+
+	int fail_op =
+		(fail == GR_KEEP)?      VK_STENCIL_OP_KEEP:
+		(fail == GR_ZERO)?      VK_STENCIL_OP_ZERO:
+		(fail == GR_REPLACE)?   VK_STENCIL_OP_REPLACE:
+		(fail == GR_INCR)?      VK_STENCIL_OP_INCREMENT_AND_CLAMP:
+		(fail == GR_INCR_WRAP)? VK_STENCIL_OP_INCREMENT_AND_WRAP:
+		(fail == GR_DECR)?      VK_STENCIL_OP_DECREMENT_AND_CLAMP:
+		(fail == GR_DECR_WRAP)? VK_STENCIL_OP_DECREMENT_AND_WRAP:
+		(fail == GR_INVERT)?    VK_STENCIL_OP_INVERT: -1;
+
+	int pass_op =
+		(pass == GR_KEEP)?      VK_STENCIL_OP_KEEP:
+		(pass == GR_ZERO)?      VK_STENCIL_OP_ZERO:
+		(pass == GR_REPLACE)?   VK_STENCIL_OP_REPLACE:
+		(pass == GR_INCR)?      VK_STENCIL_OP_INCREMENT_AND_CLAMP:
+		(pass == GR_INCR_WRAP)? VK_STENCIL_OP_INCREMENT_AND_WRAP:
+		(pass == GR_DECR)?      VK_STENCIL_OP_DECREMENT_AND_CLAMP:
+		(pass == GR_DECR_WRAP)? VK_STENCIL_OP_DECREMENT_AND_WRAP:
+		(pass == GR_INVERT)?    VK_STENCIL_OP_INVERT: -1;
+
+	int depthfail_op =
+		(depthfail == GR_KEEP)?      VK_STENCIL_OP_KEEP:
+		(depthfail == GR_ZERO)?      VK_STENCIL_OP_ZERO:
+		(depthfail == GR_REPLACE)?   VK_STENCIL_OP_REPLACE:
+		(depthfail == GR_INCR)?      VK_STENCIL_OP_INCREMENT_AND_CLAMP:
+		(depthfail == GR_INCR_WRAP)? VK_STENCIL_OP_INCREMENT_AND_WRAP:
+		(depthfail == GR_DECR)?      VK_STENCIL_OP_DECREMENT_AND_CLAMP:
+		(depthfail == GR_DECR_WRAP)? VK_STENCIL_OP_DECREMENT_AND_WRAP:
+		(depthfail == GR_INVERT)?    VK_STENCIL_OP_INVERT: -1;
+
+	if (fail_op < 0 || pass_op < 0 || depthfail_op < 0)
+		return;
+
+	if (faces == GR_FRONT || faces == GR_FRONT_AND_BACK) {
+
+		s->pdssci.front.failOp      = fail_op;
+		s->pdssci.front.passOp      = pass_op;
+		s->pdssci.front.depthFailOp = depthfail_op;
+
+	}
+
+	if (faces == GR_BACK || faces == GR_FRONT_AND_BACK) {
+
+		s->pdssci.back.failOp      = fail_op;
+		s->pdssci.back.passOp      = pass_op;
+		s->pdssci.back.depthFailOp = depthfail_op;
+
+	}
+
+}
+
+
+
+void gr_shader_stencil_func(gr_shader *s, int faces, int op, int mask)
+{
+
+	int cmp =
+		(op == GR_DISABLED)? VK_COMPARE_OP_NEVER:
+		(op == GR_NEVER)?    VK_COMPARE_OP_NEVER:
+		(op == GR_LESS)?     VK_COMPARE_OP_LESS:
+		(op == GR_EQUAL)?    VK_COMPARE_OP_EQUAL:
+		(op == GR_LEQUAL)?   VK_COMPARE_OP_LESS_OR_EQUAL:
+		(op == GR_GREATER)?  VK_COMPARE_OP_GREATER:
+		(op == GR_NOTEQUAL)? VK_COMPARE_OP_NOT_EQUAL:
+		(op == GR_GEQUAL)?   VK_COMPARE_OP_GREATER_OR_EQUAL:
+		(op == GR_ALWAYS)?   VK_COMPARE_OP_ALWAYS: -1;
+
+	if (cmp < 0)
+		return;
+
+	s->pdssci.stencilTestEnable = (op == GR_DISABLED)? VK_FALSE: VK_TRUE;
+
+	if (faces == GR_FRONT || faces == GR_FRONT_AND_BACK) {
+
+		s->pdssci.front.compareOp   = cmp;
+		s->pdssci.front.compareMask = mask;
+
+	}
+
+	if (faces == GR_BACK || faces == GR_FRONT_AND_BACK) {
+
+		s->pdssci.back.compareOp   = cmp;
+		s->pdssci.back.compareMask = mask;
+
+	}
+
+}
+
+
+
+void gr_shader_stencil_mask(gr_shader *s, int faces, int mask)
+{
+
+	if (faces == GR_FRONT || faces == GR_FRONT_AND_BACK)
+		s->pdssci.front.writeMask = mask;
+
+	if (faces == GR_BACK || faces == GR_FRONT_AND_BACK)
+		s->pdssci.back.writeMask = mask;
+
+}
+
+
+
+void gr_shader_stencil_ref(gr_shader *s, int faces, int reference)
+{
+
+	if (faces == GR_FRONT || faces == GR_FRONT_AND_BACK)
+		s->pdssci.front.reference = reference;
+
+	if (faces == GR_BACK || faces == GR_FRONT_AND_BACK)
+		s->pdssci.back.reference = reference;
+
+}
+
+
+
+void gr_shader_blend_func(gr_shader *s, int output, int channel, int func, int src, int dst)
+{
+
+	if (output < 0 || output >= GR_ATTACHMENTS_MAX)
+		return;
+
+	int eqn =
+		(func == GR_DISABLED)? VK_BLEND_OP_ADD:
+		(func == GR_ADD)?      VK_BLEND_OP_ADD:
+		(func == GR_SUB)?      VK_BLEND_OP_SUBTRACT:
+		(func == GR_SUB_REV)?  VK_BLEND_OP_REVERSE_SUBTRACT:
+		(func == GR_MIN)?      VK_BLEND_OP_MIN:
+		(func == GR_MAX)?      VK_BLEND_OP_MAX: -1;
+
+	int f_src =
+		(src == GR_ZERO)?                     VK_BLEND_FACTOR_ZERO:
+		(src == GR_ONE)?                      VK_BLEND_FACTOR_ONE:
+		(src == GR_SRC_COLOR)?                VK_BLEND_FACTOR_SRC_COLOR:
+		(src == GR_ONE_MINUS_SRC_COLOR)?      VK_BLEND_FACTOR_ONE_MINUS_SRC_COLOR:
+		(src == GR_DST_COLOR)?                VK_BLEND_FACTOR_DST_COLOR:
+		(src == GR_ONE_MINUS_DST_COLOR)?      VK_BLEND_FACTOR_ONE_MINUS_DST_COLOR:
+		(src == GR_SRC_ALPHA)?                VK_BLEND_FACTOR_SRC_ALPHA:
+		(src == GR_ONE_MINUS_SRC_ALPHA)?      VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA:
+		(src == GR_DST_ALPHA)?                VK_BLEND_FACTOR_DST_ALPHA:
+		(src == GR_ONE_MINUS_DST_ALPHA)?      VK_BLEND_FACTOR_ONE_MINUS_DST_ALPHA:
+		(src == GR_CONSTANT_COLOR)?           VK_BLEND_FACTOR_CONSTANT_COLOR:
+		(src == GR_ONE_MINUS_CONSTANT_COLOR)? VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_COLOR:
+		(src == GR_CONSTANT_ALPHA)?           VK_BLEND_FACTOR_CONSTANT_ALPHA:
+		(src == GR_ONE_MINUS_CONSTANT_ALPHA)? VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_ALPHA:
+		(src == GR_SRC_ALPHA_SATURATE)?       VK_BLEND_FACTOR_SRC_ALPHA_SATURATE:
+		(src == GR_SRC1_COLOR)?               VK_BLEND_FACTOR_SRC1_COLOR:
+		(src == GR_ONE_MINUS_SRC1_COLOR)?     VK_BLEND_FACTOR_ONE_MINUS_SRC1_COLOR:
+		(src == GR_SRC1_ALPHA)?               VK_BLEND_FACTOR_SRC1_ALPHA:
+		(src == GR_ONE_MINUS_SRC1_ALPHA)?     VK_BLEND_FACTOR_ONE_MINUS_SRC1_ALPHA: -1;
+
+	int f_dst =
+		(dst == GR_ZERO)?                     VK_BLEND_FACTOR_ZERO:
+		(dst == GR_ONE)?                      VK_BLEND_FACTOR_ONE:
+		(dst == GR_SRC_COLOR)?                VK_BLEND_FACTOR_SRC_COLOR:
+		(dst == GR_ONE_MINUS_SRC_COLOR)?      VK_BLEND_FACTOR_ONE_MINUS_SRC_COLOR:
+		(dst == GR_DST_COLOR)?                VK_BLEND_FACTOR_DST_COLOR:
+		(dst == GR_ONE_MINUS_DST_COLOR)?      VK_BLEND_FACTOR_ONE_MINUS_DST_COLOR:
+		(dst == GR_SRC_ALPHA)?                VK_BLEND_FACTOR_SRC_ALPHA:
+		(dst == GR_ONE_MINUS_SRC_ALPHA)?      VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA:
+		(dst == GR_DST_ALPHA)?                VK_BLEND_FACTOR_DST_ALPHA:
+		(dst == GR_ONE_MINUS_DST_ALPHA)?      VK_BLEND_FACTOR_ONE_MINUS_DST_ALPHA:
+		(dst == GR_CONSTANT_COLOR)?           VK_BLEND_FACTOR_CONSTANT_COLOR:
+		(dst == GR_ONE_MINUS_CONSTANT_COLOR)? VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_COLOR:
+		(dst == GR_CONSTANT_ALPHA)?           VK_BLEND_FACTOR_CONSTANT_ALPHA:
+		(dst == GR_ONE_MINUS_CONSTANT_ALPHA)? VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_ALPHA:
+		(dst == GR_SRC_ALPHA_SATURATE)?       VK_BLEND_FACTOR_SRC_ALPHA_SATURATE:
+		(dst == GR_SRC1_COLOR)?               VK_BLEND_FACTOR_SRC1_COLOR:
+		(dst == GR_ONE_MINUS_SRC1_COLOR)?     VK_BLEND_FACTOR_ONE_MINUS_SRC1_COLOR:
+		(dst == GR_SRC1_ALPHA)?               VK_BLEND_FACTOR_SRC1_ALPHA:
+		(dst == GR_ONE_MINUS_SRC1_ALPHA)?     VK_BLEND_FACTOR_ONE_MINUS_SRC1_ALPHA: -1;
+
+	s->pcbas[output].blendEnable = (func == GR_DISABLED)? VK_FALSE: VK_TRUE;
+
+	if (channel == GR_RGB || channel == GR_RGB_ALPHA) {
+
+		s->pcbas[output].srcColorBlendFactor = f_src;
+		s->pcbas[output].dstColorBlendFactor = f_dst;
+		s->pcbas[output].colorBlendOp        = eqn;
+
+	}
+
+	if (channel == GR_ALPHA || channel == GR_RGB_ALPHA) {
+
+		s->pcbas[output].srcAlphaBlendFactor = f_src;
+		s->pcbas[output].dstAlphaBlendFactor = f_dst;
+		s->pcbas[output].alphaBlendOp        = eqn;
+
+	}
+
+}
+
+
+
+void gr_shader_blend_color_mask(gr_shader *s, int output, int colormask)
+{
+
+	if (output < 0 || output >= GR_ATTACHMENTS_MAX)
+		return;
+
+	int mask = 0;
+
+	if (colormask & GR_R) mask |= VK_COLOR_COMPONENT_R_BIT;
+	if (colormask & GR_G) mask |= VK_COLOR_COMPONENT_G_BIT;
+	if (colormask & GR_B) mask |= VK_COLOR_COMPONENT_B_BIT;
+	if (colormask & GR_A) mask |= VK_COLOR_COMPONENT_A_BIT;
+
+	s->pcbas[output].colorWriteMask = mask;
+
+}
+
+
+
+void gr_shader_blend_color_ref(gr_shader *s, float r, float g, float b, float a)
+{
+
+	s->pcbsci.blendConstants[0] = r;
+	s->pcbsci.blendConstants[1] = g;
+	s->pcbsci.blendConstants[2] = b;
+	s->pcbsci.blendConstants[3] = a;
+
+}
+
+
+
+void gr_shader_blend_logic_op(gr_shader* s, int op)
+{
+
+	int logic =
+		(op == GR_DISABLED)? VK_LOGIC_OP_COPY:
+		(op == GR_CLEAR)?    VK_LOGIC_OP_CLEAR:
+		(op == GR_AND)?      VK_LOGIC_OP_AND:
+		(op == GR_AND_REV)?  VK_LOGIC_OP_AND_REVERSE:
+		(op == GR_COPY)?     VK_LOGIC_OP_COPY:
+		(op == GR_AND_INV)?  VK_LOGIC_OP_AND_INVERTED:
+		(op == GR_NOP)?      VK_LOGIC_OP_NO_OP:
+		(op == GR_XOR)?      VK_LOGIC_OP_XOR:
+		(op == GR_OR)?       VK_LOGIC_OP_OR:
+		(op == GR_NOR)?      VK_LOGIC_OP_NOR:
+		(op == GR_EQV)?      VK_LOGIC_OP_EQUIVALENT:
+		(op == GR_INV)?      VK_LOGIC_OP_INVERT:
+		(op == GR_OR_REV)?   VK_LOGIC_OP_OR_REVERSE:
+		(op == GR_COPY_INV)? VK_LOGIC_OP_COPY_INVERTED:
+		(op == GR_OR_INV)?   VK_LOGIC_OP_OR_INVERTED:
+		(op == GR_NAND)?     VK_LOGIC_OP_NAND:
+		(op == GR_SET)?      VK_LOGIC_OP_SET: -1;
+
+	if (logic < 0)
+		return;
+
+	s->pcbsci.logicOpEnable = (op != GR_DISABLED)? VK_TRUE: VK_FALSE;
+	s->pcbsci.logicOp       = logic;
+
+}
+
+
+
+bool gr_shader_upload_spirv(gr_shader *s, int stage, const char *entrypoint, const void *buf, size_t len)
+{
+
+	if (stage < 0 || stage >= GR_SHADER_MAX)
+		return false;
+
+	if (s->module[stage] != NULL)
+		vkDestroyShaderModule(gfx->vk.gpu, s->module[stage], NULL);
+
+	free((char*)s->entrypoints[stage]);
+
+	s->module[stage]      = NULL;
+	s->entrypoints[stage] = NULL;
+
+	if (buf == NULL)
+		return true;
+
+	VkShaderModuleCreateInfo smci = {
+		.sType    = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
+		.pNext    = NULL,
+		.flags    = 0,
+		.codeSize = len,
+		.pCode    = buf
+	};
+
+	if (vkCreateShaderModule(gfx->vk.gpu, &smci, NULL, &s->module[stage]) != VK_SUCCESS)
+		return false;
+
+	if (entrypoint != NULL)
+		s->entrypoints[stage] = strdup(entrypoint);
+
+	return true;
+
+}
+
+
+
+bool gr_shader_compile(gr_shader *s)
+{
+
+	s->pssci_num = 0;
+
+	static const int stages[] = {
+		VK_SHADER_STAGE_VERTEX_BIT,
+		VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT,
+		VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT,
+		VK_SHADER_STAGE_GEOMETRY_BIT,
+		VK_SHADER_STAGE_FRAGMENT_BIT,
+		VK_SHADER_STAGE_COMPUTE_BIT
+	};
+
+	for (int n=0; n < GR_SHADER_MAX; n++)
+		if (s->module[n] != NULL) {
+
+			s->pssci[s->pssci_num].sType  = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+			s->pssci[s->pssci_num].stage  = stages[n];
+			s->pssci[s->pssci_num].module = s->module[n];
+			s->pssci[s->pssci_num].pName  = (s->entrypoints[n] != NULL)? s->entrypoints[n]: "main";
+			s->pssci_num++;
+
+		}
+
+	s->pvsci.viewportCount = 1;
+	s->pvsci.pViewports    = &s->viewport;
+	s->pvsci.scissorCount  = 1;
+	s->pvsci.pScissors     = &s->scissor;
+
+	s->pcbsci.attachmentCount = s->pcbas_num;
+	s->pcbsci.pAttachments    = &s->pcbas[0];
+
+	VkGraphicsPipelineCreateInfo gpci = { 0 };
+
+	gpci.sType               = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+	gpci.stageCount          = s->pssci_num;
+	gpci.pStages             = &s->pssci[0];
+	gpci.pVertexInputState   = &s->pvisci;
+	gpci.pInputAssemblyState = &s->piasci;
+	gpci.pViewportState      = &s->pvsci;
+	gpci.pRasterizationState = &s->prsci;
+	gpci.pMultisampleState   = &s->pmsci;
+	gpci.pDepthStencilState  = &s->pdssci;
+	gpci.pColorBlendState    = &s->pcbsci;
+	gpci.pDynamicState       = NULL;
+	gpci.layout              = gfx->vk.pipeline_layout;
+	gpci.renderPass          = s->rp->renderpass;
+	gpci.subpass             = 0;
+	gpci.basePipelineHandle  = NULL;
+	gpci.basePipelineIndex   = -1;
+
+	if (vkCreateGraphicsPipelines(gfx->vk.gpu, NULL, 1, &gpci, NULL, &s->pipeline) != VK_SUCCESS) {
+
+		s->pipeline = NULL;
+		return false;
+
+	}
+
+	gpu_uniform_shader ubs;
+
+	ubs.screen = simd4f_create(
+		s->viewport.width,
+		s->viewport.height,
+		s->viewport.width  / s->viewport.height,
+		s->viewport.height / s->viewport.width);
+
+	memcpy(&ubs.arg,      s->args,            sizeof(ubs.arg));
+	memcpy(&ubs.textures, s->rp->surface_ids, sizeof(ubs.textures));
+
+	gr_uniformbuffer_commit(&s->ub, &ubs, sizeof(ubs));
+
+	return true;
+
+}
+
+
+
 gr_shader *gr_shader_find(const char *name)
 {
 
@@ -272,18 +928,25 @@ gr_shader *gr_shader_find(const char *name)
 void reset(gr_shader *s)
 {
 
-	gr_vf_init(&s->vf, GR_V2);
-
 	s->pipeline = NULL;
 
-	s->vertex   = NULL;
-	s->tessctrl = NULL;
-	s->tesseval = NULL;
-	s->geometry = NULL;
-	s->fragment = NULL;
-	s->compute  = NULL;
+	mzero(s->module);
+	mzero(s->entrypoints);
+	szero(s->vibd);
+	mzero(s->viad);
+	mzero(s->pssci);
+	szero(s->pvisci);
+	szero(s->piasci);
+	szero(s->pvsci);
+	szero(s->prsci);
+	szero(s->pmsci);
+	szero(s->pdssci);
+	mzero(s->pcbas);
+	szero(s->pcbsci);
 
 	mzero(s->args);
+
+	gr_shader_defaults(s);
 
 }
 
@@ -292,452 +955,19 @@ void reset(gr_shader *s)
 void destroy(gr_shader *s)
 {
 
-	if (s->vertex != NULL)
-		vkDestroyShaderModule(gfx->vk.gpu, s->vertex, NULL);
+	for (int n=0; n < GR_SHADER_MAX; n++) {
 
-	if (s->tessctrl != NULL)
-		vkDestroyShaderModule(gfx->vk.gpu, s->tessctrl, NULL);
+		if (s->module[n] != NULL)
+			vkDestroyShaderModule(gfx->vk.gpu, s->module[n], NULL);
 
-	if (s->tesseval != NULL)
-		vkDestroyShaderModule(gfx->vk.gpu, s->tesseval, NULL);
+		free((char*)s->entrypoints[n]);
 
-	if (s->geometry != NULL)
-		vkDestroyShaderModule(gfx->vk.gpu, s->geometry, NULL);
-
-	if (s->fragment != NULL)
-		vkDestroyShaderModule(gfx->vk.gpu, s->fragment, NULL);
-
-	if (s->compute != NULL)
-		vkDestroyShaderModule(gfx->vk.gpu, s->compute, NULL);
+	}
 
 	if (s->pipeline != NULL)
 		vkDestroyPipeline(gfx->vk.gpu, s->pipeline, NULL);
 
 	reset(s);
-
-}
-
-
-
-bool parse_metadata(const char *src, size_t len, struct metadata *md)
-{
-
-	char buf[1024] = { 0 };
-
-	memset(md, 0, sizeof(struct metadata));
-
-	md->vertex_format      = -1;
-	md->primitive_topology = -1;
-
-	md->depth_func      = VK_COMPARE_OP_MAX_ENUM;
-	md->stencil_func[0] = VK_COMPARE_OP_MAX_ENUM;
-	md->stencil_func[1] = VK_COMPARE_OP_MAX_ENUM;
-	md->blend_logic_op  = VK_LOGIC_OP_MAX_ENUM;
-
-	for (int n=0, m=0; n < len; n++, src++) {
-
-		if (*src != '\n') {
-
-			if (m + 1 >= sizeof(buf))
-				goto fail;
-
-			buf[m++] = *src;
-			continue;
-
-		}
-
-		char  s[1024];
-		int   a, b, c;
-		float x, y, z, w;
-
-		if      (sscanf(buf, ".sh %1024s\n", s) >= 1) strcpy(md->shader_name,   s);
-		else if (sscanf(buf, ".rt %1024s\n", s) >= 1) strcpy(md->render_pass, s);
-
-		else if (sscanf(buf, ".st %d\n",    &a)     >= 1) { md->shader_stage    = a; }
-		else if (sscanf(buf, ".vf %d\n",    &a)     >= 1) { md->vertex_format   = a; }
-		else if (sscanf(buf, ".rd %d\n",    &a)     >= 1) { md->raster_discard  = a; }
-		else if (sscanf(buf, ".rc %d\n",    &a)     >= 1) { md->raster_cullmode = a; }
-		else if (sscanf(buf, ".dw %d\n",    &a)     >= 1) { md->depth_write     = a; }
-		else if (sscanf(buf, ".df %d\n",    &a)     >= 1) { md->depth_func      = a; }
-		else if (sscanf(buf, ".bl %d\n",    &a)     >= 1) { md->blend_logic_op  = a; }
-		else if (sscanf(buf, ".tp %d %d\n", &a, &b) >= 1) { md->primitive_topology   = a; md->primitive_restart    = b; }
-		else if (sscanf(buf, ".sf %d %d\n", &a, &b) >= 1) { md->stencil_fail[0]      = a; md->stencil_fail[1]      = b; }
-		else if (sscanf(buf, ".sp %d %d\n", &a, &b) >= 1) { md->stencil_pass[0]      = a; md->stencil_pass[1]      = b; }
-		else if (sscanf(buf, ".sd %d %d\n", &a, &b) >= 1) { md->stencil_depthfail[0] = a; md->stencil_depthfail[1] = b; }
-		else if (sscanf(buf, ".sc %d %d\n", &a, &b) >= 1) { md->stencil_func[0]      = a; md->stencil_func[1]      = b; }
-		else if (sscanf(buf, ".sm %d %d\n", &a, &b) >= 1) { md->stencil_mask[0]      = a; md->stencil_mask[1]      = b; }
-		else if (sscanf(buf, ".sw %d %d\n", &a, &b) >= 1) { md->stencil_write[0]     = a; md->stencil_write[1]     = b; }
-		else if (sscanf(buf, ".sr %d %d\n", &a, &b) >= 1) { md->stencil_ref[0]       = a; md->stencil_ref[1]       = b; }
-
-		else if (sscanf(buf, ".db %d %f %f %f\n", &a, &x, &y, &z) >= 1) {
-
-			md->raster_depth_bias = a;
-			md->raster_depth_bias_const = x;
-			md->raster_depth_bias_slope = y;
-			md->raster_depth_bias_clamp = z;
-
-
-		} else if (sscanf(buf, ".cc %f %f %f %f\n", &x, &y, &z, &w) >= 1) {
-
-			md->blend_color[0] = x;
-			md->blend_color[1] = y;
-			md->blend_color[2] = z;
-			md->blend_color[3] = z;
-
-		} else {
-
-			int mode = -1;
-			int atch = -1;
-
-			if      (sscanf(buf, ".wm %1024s %d\n",       s, &a) >= 1)         mode = 0; // Color masks
-			else if (sscanf(buf, ".bc %1024s %d %d %d\n", s, &a, &b, &c) >= 1) mode = 1; // Color blend
-			else if (sscanf(buf, ".ba %1024s %d %d %d\n", s, &a, &b, &c) >= 1) mode = 2; // Alpha blend
-			else {
-
-				mzero(buf);
-				m = 0;
-				continue;
-
-			}
-
-			for (int k=0; k < md->attachments; k++)
-				if (!strcmp(md->attachment[k].name, s)) {
-
-					atch = k;
-					break;
-
-				}
-
-			if (atch < 0) {
-
-				atch = md->attachments++;
-
-				if (atch > GR_ATTACHMENTS_MAX)
-					goto fail;
-
-				strcpy(md->attachment[atch].name, s);
-
-				md->attachment[atch].blend_color_func = VK_BLEND_OP_MAX_ENUM;
-				md->attachment[atch].blend_alpha_func = VK_BLEND_OP_MAX_ENUM;
-
-			}
-
-			if (mode == 1) {
-
-				md->attachment[atch].blend_color_func = a;
-				md->attachment[atch].blend_color_src  = b;
-				md->attachment[atch].blend_color_dst  = c;
-
-			} else if (mode == 2) {
-
-				md->attachment[atch].blend_alpha_func = a;
-				md->attachment[atch].blend_alpha_src  = b;
-				md->attachment[atch].blend_alpha_dst  = c;
-
-			} else
-				md->attachment[atch].color_mask = a;
-
-		}
-
-		mzero(buf);
-		m = 0;
-
-	}
-
-	return true;
-
-fail:
-	log_e("shader: malformed metadata!");
-	return false;
-
-}
-
-
-
-bool parse_spirv(const char *src, size_t len, u32 *spirv, size_t *words)
-{
-
-	char   buf[1024] = { 0 };
-	size_t num = 0;
-	size_t k   = 0;
-	bool   comment = false;
-
-	for (int n=0; n < len; n++, src++) {
-
-		if (src[0] == '/' && src[1] == '/')
-			comment = true;
-
-		if (*src != '\n' && *src != ',') {
-
-			if (num + 1 >= sizeof(buf))
-				goto fail;
-
-			if (!isspace(*src) && !comment)
-				buf[num++] = *src;
-
-			continue;
-
-		}
-
-		if (num > 0)
-			spirv[k++] = strtoul(buf, NULL, 0);
-
-		mzero(buf);
-		comment = false;
-		num       = 0;
-
-	}
-
-	if (num > 0)
-		spirv[k++] = strtoul(buf, NULL, 0);
-
-	if (words != NULL)
-		*words = k;
-
-	return true;
-
-fail:
-	return false;
-
-}
-
-
-
-VkShaderModule compile_spirv(const void *buf, size_t len)
-{
-
-	if (buf == NULL)
-		return NULL;
-
-	VkShaderModuleCreateInfo smci = {
-		.sType    = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
-		.pNext    =  NULL,
-		.flags    = 0,
-		.codeSize = len,
-		.pCode    = buf
-	};
-
-	VkShaderModule sm = NULL;
-
-	if (vkCreateShaderModule(gfx->vk.gpu, &smci, NULL, &sm) != VK_SUCCESS)
-		return NULL;
-
-	return sm;
-
-}
-
-
-
-bool create_pipeline(gr_shader *s, const struct metadata *md)
-{
-
-	VkPipelineShaderStageCreateInfo        pssci[6]                  = { 0 }; //Shader stage control
-	VkPipelineVertexInputStateCreateInfo   pvisci                    = { 0 }; //Controls VertexFormat and constant uniforms
-	VkPipelineInputAssemblyStateCreateInfo piasci                    = { 0 }; //Controls input primitive type (point, line, trilist, ...)
-	VkPipelineViewportStateCreateInfo      pvsci                     = { 0 }; //Viewport control
-	VkPipelineRasterizationStateCreateInfo prsci                     = { 0 }; //Rasterizer control: Culling, Wireframe, DepthBias
-	VkPipelineMultisampleStateCreateInfo   pmsci                     = { 0 }; //Multisampler control
-	VkPipelineDepthStencilStateCreateInfo  pdssci                    = { 0 };
-	VkPipelineColorBlendAttachmentState    pcbas[GR_ATTACHMENTS_MAX] = { 0 }; //Color blending control per output buffer: FIXME: MAX_ATTACHMENTS
-	VkPipelineColorBlendStateCreateInfo    pcbsci                    = { 0 }; //Global blending control
-
-	int stage_num = 0;
-
-	if (s->vertex != NULL) {
-
-		pssci[stage_num].sType  = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-		pssci[stage_num].stage  = VK_SHADER_STAGE_VERTEX_BIT;
-		pssci[stage_num].module = s->vertex;
-		pssci[stage_num].pName  = "main";
-		stage_num++;
-
-	}
-
-	if (s->tessctrl != NULL) {
-
-		pssci[stage_num].sType  = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-		pssci[stage_num].stage  = VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT;
-		pssci[stage_num].module = s->tessctrl;
-		pssci[stage_num].pName  = "main";
-		stage_num++;
-
-	}
-
-	if (s->tesseval != NULL) {
-
-		pssci[stage_num].sType  = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-		pssci[stage_num].stage  = VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
-		pssci[stage_num].module = s->tesseval;
-		pssci[stage_num].pName  = "main";
-		stage_num++;
-
-	}
-
-	if (s->geometry != NULL) {
-
-		pssci[stage_num].sType  = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-		pssci[stage_num].stage  = VK_SHADER_STAGE_GEOMETRY_BIT;
-		pssci[stage_num].module = s->geometry;
-		pssci[stage_num].pName  = "main";
-		stage_num++;
-
-	}
-
-	if (s->fragment != NULL) {
-
-		pssci[stage_num].sType  = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-		pssci[stage_num].stage  = VK_SHADER_STAGE_FRAGMENT_BIT;
-		pssci[stage_num].module = s->fragment;
-		pssci[stage_num].pName  = "main";
-		stage_num++;
-
-	}
-
-	if (s->compute != NULL) {
-
-		pssci[stage_num].sType  = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-		pssci[stage_num].stage  = VK_SHADER_STAGE_COMPUTE_BIT;
-		pssci[stage_num].module = s->compute;
-		pssci[stage_num].pName  = "main";
-		stage_num++;
-
-	}
-
-	VkVertexInputBindingDescription vibd = { 0 };
-
-	vibd.binding   = 0;
-	vibd.stride    = s->vf.stride;
-	vibd.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-
-	VkVertexInputAttributeDescription viad[16];
-	uint                              viad_num = gr_vf_build_descriptors(&s->vf, &viad[0]);
-
-	pvisci.sType                           = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-	pvisci.vertexBindingDescriptionCount   = 1;
-	pvisci.vertexAttributeDescriptionCount = viad_num;
-	pvisci.pVertexBindingDescriptions      = &vibd;
-	pvisci.pVertexAttributeDescriptions    = &viad[0];
-
-	watch("%d", vibd.stride);
-	watch("%d", pvisci.vertexAttributeDescriptionCount);
-
-	piasci.sType                  = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-	piasci.topology               = md->primitive_topology;
-	piasci.primitiveRestartEnable = md->primitive_restart;
-
-	VkViewport viewport;
-	VkRect2D   scissor;
-
-	viewport.x        = 0.0f;
-	viewport.y        = 0.0f;
-	viewport.width    = (float)s->rp->width;
-	viewport.height   = (float)s->rp->height;
-	viewport.minDepth = 0.0f;
-	viewport.maxDepth = 1.0f;
-
-	scissor.offset.x      = 0;
-	scissor.offset.y      = 0;
-	scissor.extent.width  = s->rp->width;
-	scissor.extent.height = s->rp->height;
-
-	pvsci.sType         = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-	pvsci.viewportCount = 1;
-	pvsci.pViewports    = &viewport;
-	pvsci.scissorCount  = 1;
-	pvsci.pScissors     = &scissor;
-
-	prsci.sType                   = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-	prsci.depthClampEnable        = VK_FALSE;
-	prsci.rasterizerDiscardEnable = md->raster_discard;
-	prsci.polygonMode             = VK_POLYGON_MODE_FILL;
-	prsci.lineWidth               = 1.0f;
-	prsci.cullMode                = md->raster_cullmode;
-	prsci.frontFace               = VK_FRONT_FACE_CLOCKWISE;
-	prsci.depthBiasEnable         = md->raster_depth_bias;
-	prsci.depthBiasConstantFactor = md->raster_depth_bias_const;
-	prsci.depthBiasSlopeFactor    = md->raster_depth_bias_slope;
-	prsci.depthBiasClamp          = md->raster_depth_bias_clamp;
-
-	pmsci.sType                = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-	pmsci.sampleShadingEnable  = VK_FALSE;
-	pmsci.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
-
-	const bool depth_test    = md->depth_func      != VK_COMPARE_OP_MAX_ENUM;
-	const bool stencil_front = md->stencil_func[0] != VK_COMPARE_OP_MAX_ENUM;
-	const bool stencil_back  = md->stencil_func[1] != VK_COMPARE_OP_MAX_ENUM;
-
-	pdssci.sType                 = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-	pdssci.depthTestEnable       = depth_test? VK_TRUE: VK_FALSE;
-	pdssci.depthWriteEnable      = md->depth_write;
-	pdssci.depthCompareOp        = depth_test? md->depth_func: VK_COMPARE_OP_NEVER;
-	pdssci.depthBoundsTestEnable = VK_FALSE;
-	pdssci.minDepthBounds        = 0.0f;
-	pdssci.maxDepthBounds        = 1.0f;
-	pdssci.stencilTestEnable     = (stencil_front || stencil_back)? VK_TRUE: VK_FALSE;
-	pdssci.front.failOp          = stencil_front? md->stencil_fail[0]:      VK_STENCIL_OP_KEEP;
-	pdssci.front.passOp          = stencil_front? md->stencil_pass[0]:      VK_STENCIL_OP_KEEP;
-	pdssci.front.depthFailOp     = stencil_front? md->stencil_depthfail[0]: VK_STENCIL_OP_KEEP;
-	pdssci.front.compareOp       = stencil_front? md->stencil_func[0]:      VK_COMPARE_OP_NEVER;
-	pdssci.front.compareMask     = md->stencil_mask[0];
-	pdssci.front.writeMask       = md->stencil_write[0];
-	pdssci.front.reference       = md->stencil_ref[0];
-	pdssci.back.failOp           = stencil_back? md->stencil_fail[1]:      VK_STENCIL_OP_KEEP;
-	pdssci.back.passOp           = stencil_back? md->stencil_pass[1]:      VK_STENCIL_OP_KEEP;
-	pdssci.back.depthFailOp      = stencil_back? md->stencil_depthfail[1]: VK_STENCIL_OP_KEEP;
-	pdssci.back.compareOp        = stencil_back? md->stencil_func[1]:      VK_COMPARE_OP_NEVER;
-	pdssci.back.compareMask      = md->stencil_mask[1];
-	pdssci.back.writeMask        = md->stencil_write[1];
-	pdssci.back.reference        = md->stencil_ref[1];
-
-//FIXME: Set blend state per attachment [[ATTACHMENTS REQUIRED]]
-	pcbas[0].colorWriteMask      = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-	pcbas[0].blendEnable         = VK_FALSE;
-	pcbas[0].srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
-	pcbas[0].dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-	pcbas[0].colorBlendOp        = VK_BLEND_OP_ADD;
-	pcbas[0].srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
-	pcbas[0].dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
-	pcbas[0].alphaBlendOp        = VK_BLEND_OP_ADD;
-
-	const bool blend_logic_op = md->blend_logic_op != VK_LOGIC_OP_MAX_ENUM;
-
-	pcbsci.sType             = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-	pcbsci.logicOpEnable     = blend_logic_op? VK_TRUE: VK_FALSE;
-	pcbsci.logicOp           = blend_logic_op? md->blend_logic_op: VK_LOGIC_OP_COPY;
-	pcbsci.attachmentCount   = 1;//countof(pcbas);
-	pcbsci.pAttachments      = &pcbas[0];
-	pcbsci.blendConstants[0] = md->blend_color[0];
-	pcbsci.blendConstants[1] = md->blend_color[1];
-	pcbsci.blendConstants[2] = md->blend_color[2];
-	pcbsci.blendConstants[3] = md->blend_color[3];
-
-	VkGraphicsPipelineCreateInfo gpci = {};
-
-	gpci.sType               = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-	gpci.stageCount          = stage_num;
-	gpci.pStages             = &pssci[0];
-	gpci.pVertexInputState   = &pvisci;
-	gpci.pInputAssemblyState = &piasci;
-	gpci.pViewportState      = &pvsci;
-	gpci.pRasterizationState = &prsci;
-	gpci.pMultisampleState   = &pmsci;
-	gpci.pDepthStencilState  = &pdssci;
-	gpci.pColorBlendState    = &pcbsci;
-	gpci.pDynamicState       = NULL; //FIXME: Set Dynamic state here
-	gpci.layout              = gfx->vk.pipeline_layout;
-	gpci.renderPass          = s->rp->renderpass;
-	gpci.subpass             = 0;
-	gpci.basePipelineHandle  = NULL;
-	gpci.basePipelineIndex   = -1;
-
-	if (vkCreateGraphicsPipelines(gfx->vk.gpu, NULL, 1, &gpci, NULL, &s->pipeline) != VK_SUCCESS) {
-
-		s->pipeline = NULL;
-		return false;
-
-	}
-
-	return true;
 
 }
 

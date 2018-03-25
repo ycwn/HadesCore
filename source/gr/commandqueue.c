@@ -36,9 +36,9 @@ static struct queue_t merge_queue;
 static inline int command_compare(const gr_command **a, const gr_command **b)
 {
 
-	return  ((*a)->shader->stage != (*b)->shader->stage)?
-			(*a)->shader->stage - (*b)->shader->stage:
-			(*a)->vertices      - (*b)->vertices;
+	return  ((*a)->shader->priority != (*b)->shader->priority)?
+			(*a)->shader->priority - (*b)->shader->priority:
+			(*a)->vertices         - (*b)->vertices;
 
 }
 

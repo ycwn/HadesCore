@@ -38,7 +38,7 @@ models   += $(patsubst %.png,$(data)/%.dds,$(foreach mdl,$(modelsrc),$(wildcard 
 models   += $(patsubst %.png,$(data)/%.dds,$(foreach mdl,$(modelsrc),$(wildcard models/$(mdl)_norm.png)))
 music     = $(musicsrc:%=$(data)/%)
 scripts   = $(scriptsrc:../%=$(data)/%)
-shaders   = $(shadersrc:../%.shader=$(data)/%.a)
+shaders   = $(shadersrc:../%.shader=$(data)/%.spirv)
 rendrcs   = $(rendrc:../%.conf=$(data)/%.conf)
 skins     = $(skinsrc:%=$(data)/hud/%.dds)
 skins    += $(skinsrc:%=$(data)/hud/%.xml)
@@ -98,7 +98,7 @@ $(scripts): $(data)/%: ../%
 #
 # Compile shaders
 #
-$(shaders): $(data)/%.a: ../%.shader
+$(shaders): $(data)/%.spirv: ../%.shader
 	$(sc) -I../shaders/sys -I../interface -K -o $@ $< ../shaders/etc/glslangValidator.conf
 
 
