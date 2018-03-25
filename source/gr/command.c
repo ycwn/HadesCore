@@ -56,6 +56,7 @@ void gr_command_init(gr_command *cmds, uint num)
 		cmds[n].index = -1;
 		cmds[n].start = 0;
 		cmds[n].count = 0;
+		cmds[n].tag   = 0;
 
 	}
 

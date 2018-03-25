@@ -24,6 +24,7 @@ typedef struct gr_command {
 	int index;
 	int start;
 	int count;
+	int tag;
 
 } gr_command;
 
