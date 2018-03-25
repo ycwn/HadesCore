@@ -36,9 +36,9 @@ typedef struct gr_renderpass {
 	int width;
 	int height;
 
+	int attachment_colors;
 	int attachment_count;
 	int surface_count;
-	//int attachment_colors;
 
 	VkImageView   attachment_image[GR_SWAPCHAIN_MAX][GR_ATTACHMENTS_MAX];
 	VkClearValue  attachment_clear[GR_ATTACHMENTS_MAX];

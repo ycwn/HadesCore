@@ -266,7 +266,7 @@ bool create_renderpass(gr_renderpass *rp)
 	if (vkCreateRenderPass(gfx->vk.gpu, &rpci, NULL, &rp->renderpass) != VK_SUCCESS)
 		return false;
 
-	//rt->attachment_colors = ar_c_num;
+	rp->attachment_colors = ar_c_num;
 
 	return true;
 
@@ -309,7 +309,7 @@ void reset(gr_renderpass *rp)
 	rp->width  = 0;
 	rp->height = 0;
 
-//	rt->attachment_colors = 0;
+	rp->attachment_colors = 0;
 	rp->attachment_count  = 0;
 	rp->surface_count     = 0;
 
