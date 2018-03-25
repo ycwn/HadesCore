@@ -58,7 +58,6 @@ void gr_uniformbuffer_del(gr_uniformbuffer *ub)
 
 	gr_uniformbuffer_init(ub);
 
-
 }
 
 

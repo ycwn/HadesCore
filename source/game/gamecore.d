@@ -64,7 +64,7 @@ void main(string[] argv)
 	writefln("bandit.has(component_light)     = %s\t(%x)", bandit.has!component_light(),     bandit.get!component_light());
 	writefln("bandit.has(component_transform) = %s\t(%x)", bandit.has!component_transform(), bandit.get!component_transform());
 
-	writefln("bandit.get(component_ai)     = %x", bandit.get!component_ai());
+	writefln("bandit.get(component_ai) = %x", bandit.get!component_ai());
 
 	log_printf(LOG_DEBUG, "SEE YOU AT THE PARTY, RICHTER!: %s", engine.buildinfo.user);
 

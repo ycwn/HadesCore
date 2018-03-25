@@ -117,9 +117,9 @@ static int  parse_token(     stb_lexer *lex);
 static bool parse_integer(   stb_lexer *lex, int *value);
 static int  parse_number(    stb_lexer *lex, int *i, float *f);
 static bool parse_format(    stb_lexer *lex, int *format);
-static bool parse_surface(   stb_lexer *lex);
 static bool parse_renderpass(stb_lexer *lex);
 static bool parse_shader(    stb_lexer *lex);
+static bool parse_surface(   stb_lexer *lex);
 static bool parse_pipeline(  stb_lexer *lex);
 
 
@@ -504,64 +504,13 @@ bool parse_format(stb_lexer *lex, int *format)
 
 
 
-bool parse_surface(stb_lexer *lex)
-{
-
-	if (parse_token(lex) != CLEX_id)
-		return false;
-
-	int width  = -1;
-	int height = -1;
-	int format = VK_FORMAT_UNDEFINED;
-
-	char name[lex->string_len + 1];
-	strcpy(name, lex->string);
-
-	gr_surface *s = gr_surface_find(lex->string);
-
-	if (s != NULL)
-		PARSE_ERROR("Another surface with name '%s' already exists", lex->string);
-
-	if (parse_token(lex) != '{')
-		PARSE_ERROR_UNEXPECT('{');
-
-	while (true) {
-
-		int stmt = parse_token(lex);
-
-		if      (stmt == '}') break;
-		else if (stmt == K_WIDTH)  { if (!parse_integer(lex, &width)  || parse_token(lex) != ';') return false; }
-		else if (stmt == K_HEIGHT) { if (!parse_integer(lex, &height) || parse_token(lex) != ';') return false; }
-		else if (stmt == K_FORMAT) { if (!parse_format( lex, &format)) return false; }
-		else
-			PARSE_ERROR("Surface definition statement expected");
-
-	}
-
-	if (width  < 0)                    PARSE_ERROR("Surface '%s' has no width", name);
-	if (height < 0)                    PARSE_ERROR("Surface '%s' has no height", name);
-	if (format == VK_FORMAT_UNDEFINED) PARSE_ERROR("Surface '%s' has no format", name);
-
-	gr_surface *surf = gr_surface_attachment(name, width, height, format, true);
-
-	if (surf == NULL)
-		PARSE_ERROR("Failed to create surface '%s'", name);
-
-	log_d("Created '%s' surface as %dx%d %s", surf->name, surf->width, surf->height, surf->pf->name);
-
-	return true;
-
-}
-
-
-
 bool parse_renderpass(stb_lexer *lex)
 {
 
 	if (parse_token(lex) != CLEX_id)
 		PARSE_ERROR_UNEXPECT(CLEX_id);
 
-	log_d("Starting renderpass %s\n", lex->string);
+	log_d("Starting renderpass %s", lex->string);
 
 	gr_renderpass *rp = gr_renderpass_find(lex->string);
 
@@ -783,6 +732,57 @@ bool parse_shader(stb_lexer *lex)
 
 
 
+bool parse_surface(stb_lexer *lex)
+{
+
+	if (parse_token(lex) != CLEX_id)
+		return false;
+
+	int width  = -1;
+	int height = -1;
+	int format = VK_FORMAT_UNDEFINED;
+
+	char name[lex->string_len + 1];
+	strcpy(name, lex->string);
+
+	gr_surface *s = gr_surface_find(lex->string);
+
+	if (s != NULL)
+		PARSE_ERROR("Another surface with name '%s' already exists", lex->string);
+
+	if (parse_token(lex) != '{')
+		PARSE_ERROR_UNEXPECT('{');
+
+	while (true) {
+
+		int stmt = parse_token(lex);
+
+		if      (stmt == '}') break;
+		else if (stmt == K_WIDTH)  { if (!parse_integer(lex, &width)  || parse_token(lex) != ';') return false; }
+		else if (stmt == K_HEIGHT) { if (!parse_integer(lex, &height) || parse_token(lex) != ';') return false; }
+		else if (stmt == K_FORMAT) { if (!parse_format( lex, &format)) return false; }
+		else
+			PARSE_ERROR("Surface definition statement expected");
+
+	}
+
+	if (width  < 0)                    PARSE_ERROR("Surface '%s' has no width", name);
+	if (height < 0)                    PARSE_ERROR("Surface '%s' has no height", name);
+	if (format == VK_FORMAT_UNDEFINED) PARSE_ERROR("Surface '%s' has no format", name);
+
+	gr_surface *surf = gr_surface_attachment(name, width, height, format, true);
+
+	if (surf == NULL)
+		PARSE_ERROR("Failed to create surface '%s'", name);
+
+	log_d("Created '%s' surface as %dx%d %s", surf->name, surf->width, surf->height, surf->pf->name);
+
+	return true;
+
+}
+
+
+
 bool parse_pipeline(stb_lexer *lex)
 {
 
@@ -791,9 +791,9 @@ bool parse_pipeline(stb_lexer *lex)
 		int token = parse_token(lex);
 
 		if      (token < 0)             return true;
-		else if (token == K_SURFACE)    { if (!parse_surface(lex))    return false; }
 		else if (token == K_RENDERPASS) { if (!parse_renderpass(lex)) return false; }
 		else if (token == K_SHADER)     { if (!parse_shader(lex))     return false; }
+		else if (token == K_SURFACE)    { if (!parse_surface(lex))    return false; }
 		else
 			return false;
 	}
