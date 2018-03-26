@@ -6,7 +6,6 @@
 #include "core/list.h"
 #include "core/blob.h"
 #include "core/logger.h"
-#include "core/archive.h"
 #include "core/variable.h"
 
 #include "gr/limits.h"

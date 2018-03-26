@@ -4,7 +4,6 @@ module hades;
 
 public {
 
-	import hades.core_archive;
 	import hades.core_blob;
 	import hades.core_chrono;
 	import hades.core_hades;
