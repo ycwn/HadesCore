@@ -320,30 +320,39 @@ void gr_shader_defaults(gr_shader *s)
 	s->pdssci.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
 	s->pcbsci.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
 
-	gr_shader_vertex_format(   s, GR_V2);
-	gr_shader_vertex_topology( s, GR_TRIANGLES, false);
-	gr_shader_renderpass(      s, NULL, NULL);
-	gr_shader_rasterizer_mode( s, GR_FRONT, GR_FILL);
-	gr_shader_multisampling(   s);
+	gr_shader_vertex_format(  s, GR_V2);
+	gr_shader_vertex_topology(s, GR_TRIANGLES, false);
+	gr_shader_renderpass(     s, NULL, NULL);
+	gr_shader_rasterizer_mode(s, GR_FRONT, GR_FILL);
+	gr_shader_multisampling(  s);
+
 	gr_shader_depth_clamp(     s, false);
 	gr_shader_depth_bias(      s, false, 0.0f, 0.0f, 0.0f);
 	gr_shader_depth_write(     s, true);
 	gr_shader_depth_boundcheck(s, false, 0.0f, 1.0f);
 	gr_shader_depth_func(      s, GR_DISABLED);
-	gr_shader_stencil_op(      s, GR_FRONT_AND_BACK, GR_KEEP, GR_KEEP, GR_KEEP);
-	gr_shader_stencil_func(    s, GR_FRONT_AND_BACK, GR_DISABLED, 0);
-	gr_shader_stencil_mask(    s, GR_FRONT_AND_BACK, 0);
-	gr_shader_stencil_ref(     s, GR_FRONT_AND_BACK, 0);
-	gr_shader_blend_func(      s, 0, GR_RGB_ALPHA, GR_DISABLED, GR_ONE, GR_ZERO);
-	gr_shader_blend_color_mask(s, 0, GR_R | GR_G | GR_B | GR_A);
-	gr_shader_blend_color_ref( s, 0.0f, 0.0f, 0.0f, 0.0f);
-	gr_shader_blend_logic_op(  s, GR_DISABLED);
-	gr_shader_upload_spirv(    s, GR_SHADER_VERTEX,           "main", NULL, 0);
-	gr_shader_upload_spirv(    s, GR_SHADER_TESSELATION_CTRL, "main", NULL, 0);
-	gr_shader_upload_spirv(    s, GR_SHADER_TESSELATION_EVAL, "main", NULL, 0);
-	gr_shader_upload_spirv(    s, GR_SHADER_GEOMETRY,         "main", NULL, 0);
-	gr_shader_upload_spirv(    s, GR_SHADER_FRAGMENT,         "main", NULL, 0);
-	gr_shader_upload_spirv(    s, GR_SHADER_COMPUTE,          "main", NULL, 0);
+
+	gr_shader_stencil_op(  s, GR_FRONT_AND_BACK, GR_KEEP, GR_KEEP, GR_KEEP);
+	gr_shader_stencil_func(s, GR_FRONT_AND_BACK, GR_DISABLED, 0);
+	gr_shader_stencil_mask(s, GR_FRONT_AND_BACK, 0);
+	gr_shader_stencil_ref( s, GR_FRONT_AND_BACK, 0);
+
+	for (int n=0; n < GR_ATTACHMENTS_MAX; n++) {
+
+		gr_shader_blend_func(      s, n, GR_RGB_ALPHA, GR_DISABLED, GR_ONE, GR_ZERO);
+		gr_shader_blend_color_mask(s, n, GR_R | GR_G | GR_B | GR_A);
+
+	}
+
+	gr_shader_blend_color_ref(s, 0.0f, 0.0f, 0.0f, 0.0f);
+	gr_shader_blend_logic_op( s, GR_DISABLED);
+
+	gr_shader_upload_spirv(s, GR_SHADER_VERTEX,           "main", NULL, 0);
+	gr_shader_upload_spirv(s, GR_SHADER_TESSELATION_CTRL, "main", NULL, 0);
+	gr_shader_upload_spirv(s, GR_SHADER_TESSELATION_EVAL, "main", NULL, 0);
+	gr_shader_upload_spirv(s, GR_SHADER_GEOMETRY,         "main", NULL, 0);
+	gr_shader_upload_spirv(s, GR_SHADER_FRAGMENT,         "main", NULL, 0);
+	gr_shader_upload_spirv(s, GR_SHADER_COMPUTE,          "main", NULL, 0);
 
 }
 
