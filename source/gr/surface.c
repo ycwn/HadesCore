@@ -355,7 +355,7 @@ gr_surface *gr_surface_attachment(const char *name, uint width, uint height, uin
 	if (pf->aspect & VK_IMAGE_ASPECT_STENCIL_BIT) usage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
 	if (sampled)                                  usage |= VK_IMAGE_USAGE_SAMPLED_BIT;
 
-	if (!gr_surface_alloc(s, pf, width, height, 1, 1, 1, usage, GR_SURFACE_DEFAULT))
+	if (!gr_surface_alloc(s, pf, width, height, 1, 1, 1, usage, GR_SURFACE_ATTACHMENT))
 		goto failed;
 
 	return s;
@@ -535,8 +535,16 @@ void gr_surface_rebind(gr_surface *s)
 	if (s->id < 0 || s->sampler == NULL)
 		return;
 
-	texture_cache_imageinfo[s->index].imageView = s->image_view;
-	texture_cache_imageinfo[s->index].sampler   = s->sampler;
+	const VkImageLayout layout =
+		(s->flags & GR_SURFACE_ATTACHMENT)?
+			(s->pf->aspect == VK_IMAGE_ASPECT_COLOR_BIT)?
+				VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL:
+				VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL:
+			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+	texture_cache_imageinfo[s->index].imageLayout = layout;
+	texture_cache_imageinfo[s->index].imageView   = s->image_view;
+	texture_cache_imageinfo[s->index].sampler     = s->sampler;
 
 	texture_cache_update = true;
 
@@ -550,8 +558,9 @@ void gr_surface_unbind(gr_surface *s)
 	if (s->id < 0 || s->sampler == NULL)
 		return;
 
-	texture_cache_imageinfo[s->index].imageView = texture_guard_image_view;
-	texture_cache_imageinfo[s->index].sampler   = texture_guard_sampler;
+	texture_cache_imageinfo[s->index].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+	texture_cache_imageinfo[s->index].imageView   = texture_guard_image_view;
+	texture_cache_imageinfo[s->index].sampler     = texture_guard_sampler;
 
 	texture_cache_bitmap[s->index / 64] &= ~(1 << (s->index & 63));
 
