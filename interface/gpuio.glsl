@@ -70,7 +70,10 @@ layout(std140, binding=0, set=GPU_UNIFORM_SHADER) uniform g_shader_t {
 
 	vec4 arg[GPU_SHADER_ARGUMENTS]; // Free shader parameters
 
-	uint texture[GPU_SHADER_TEXTURES];
+	uint tex0,  tex1,  tex2,  tex3;
+	uint tex4,  tex5,  tex6,  tex7;
+	uint tex8,  tex9,  tex10, tex11;
+	uint tex12, tex13, tex14, tex15;
 
 } g_shader;
 
@@ -101,7 +104,10 @@ layout(std140, binding=0, set=GPU_UNIFORM_MATERIAL) uniform g_material_t {
 
 	vec4 arg[GPU_MATERIAL_ARGUMENTS]; // Free material parameters
 
-	uint texture[GPU_MATERIAL_TEXTURES];
+	uint tex0,  tex1,  tex2,  tex3;
+	uint tex4,  tex5,  tex6,  tex7;
+	uint tex8,  tex9,  tex10, tex11;
+	uint tex12, tex13, tex14, tex15;
 
 } g_material;
 
