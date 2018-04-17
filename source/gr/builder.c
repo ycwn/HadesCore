@@ -766,14 +766,16 @@ bool parse_surface(stb_lexer *lex)
 
 	}
 
-	if (width  < 0)                    PARSE_ERROR("Surface '%s' has no width", name);
-	if (height < 0)                    PARSE_ERROR("Surface '%s' has no height", name);
+	if (width  < 1)                    PARSE_ERROR("Surface '%s' has no width", name);
+	if (height < 1)                    PARSE_ERROR("Surface '%s' has no height", name);
 	if (format == VK_FORMAT_UNDEFINED) PARSE_ERROR("Surface '%s' has no format", name);
 
 	gr_surface *surf = gr_surface_attachment(name, width, height, format, true);
 
 	if (surf == NULL)
 		PARSE_ERROR("Failed to create surface '%s'", name);
+
+	gr_surface_set_environment(surf);
 
 	log_d("Created '%s' surface as %dx%d %s", surf->name, surf->width, surf->height, surf->pf->name);
 
