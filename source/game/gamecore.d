@@ -86,7 +86,7 @@ void main(string[] argv)
 	auto ukey = input_binding_new("ukey", "up");
 	auto dkey = input_binding_new("dkey", "down");
 	auto lkey = input_binding_new("lkey", "left");
-	auto rkey = input_binding_new("rkey", "right");
+	auto quit = input_binding_new("input.key.quit", "escape");
 
 	sg_geometry_load(suzanne, "models/cube.geo");
 
@@ -108,6 +108,9 @@ void main(string[] argv)
 	uint  n = 0;
 
 	while (hades_update()) {
+
+		if (quit.state == KEY_PRESSED)
+			break;
 
 		sg_transform_rotate_angle(R, x, x * 0.9f);
 		suzanne.entity.recalculate = true;
