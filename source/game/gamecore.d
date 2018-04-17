@@ -68,6 +68,8 @@ void main(string[] argv)
 
 	log_printf(LOG_DEBUG, "SEE YOU AT THE PARTY, RICHTER!: %s", engine.buildinfo.user);
 
+	gr_postprocessor_attach(gr_shader_find("blurh"));
+	gr_postprocessor_attach(gr_shader_find("blurhv"));
 	gr_postprocessor_attach(gr_shader_find("scanline"));
 
 	auto scene   = sg_scenegraph_new("root");
