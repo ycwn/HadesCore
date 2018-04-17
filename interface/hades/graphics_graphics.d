@@ -112,6 +112,7 @@ extern(C) {
 
 	bool gr_set_video();
 	void gr_submit();
+	void gr_flush();
 
 	int  gr_get_memory_type(uint mask, uint props);
 	bool gr_create_buffer(VkBuffer *buf, VkDeviceMemory *mem, size_t size, uint usage, uint props);

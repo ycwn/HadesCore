@@ -114,9 +114,10 @@ void main(string[] argv)
 		if (ukey.state == KEY_PRESSED) { gr_surface_unbind(nehe_r); gr_surface_unbind(nehe_g); gr_surface_bind(nehe_b); }
 		if (dkey.state == KEY_PRESSED) { gr_surface_unbind(nehe_g); gr_surface_unbind(nehe_b); gr_surface_bind(nehe_r); }
 		if (lkey.state == KEY_PRESSED) { gr_surface_unbind(nehe_b); gr_surface_unbind(nehe_r); gr_surface_bind(nehe_g); }
-		if (rkey.state == KEY_PRESSED) writeln("Right!");
 
 	}
+
+	gr_flush();
 
 	sg_geometry_del(suzanne);
 	sg_camera_del(camera);

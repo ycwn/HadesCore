@@ -472,6 +472,18 @@ void gr_submit()
 
 
 
+void gr_flush()
+{
+
+	if (gfx.vk.graphics_queue == NULL)
+		return;
+
+	vkQueueWaitIdle(gfx.vk.graphics_queue);
+
+}
+
+
+
 int gr_get_memory_type(uint mask, uint props)
 {
 
