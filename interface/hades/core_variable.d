@@ -27,8 +27,8 @@ extern(C) {
 
 	void var_set_cb(variable *self, variable_cb func, void *data);
 
-	bool var_read( const ubyte *buf, size_t len);
-	bool var_write(ubyte       *buf, size_t len);
+	bool var_load(const(char) *file);
+	bool var_save(const(char) *file);
 
 }
 

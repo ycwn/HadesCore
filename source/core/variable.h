@@ -43,8 +43,8 @@ variable *var_find(const char *name);
 variable *var_nget(const char *name, const char **buf);
 variable *var_nset(const char *name, const char *str);
 
-bool var_read( const void *buf, size_t len);
-bool var_write(void *buf,       size_t len);
+bool var_load(const char *file);
+bool var_save(const char *file);
 
 
 int    *var_new_int(  const char *name, const char *def);

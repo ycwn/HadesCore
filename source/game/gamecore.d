@@ -22,7 +22,14 @@ void main(string[] argv)
 
 	auto engine = hades_create();
 
+	auto ukey = input_binding_new("ukey", "up");
+	auto dkey = input_binding_new("dkey", "down");
+	auto lkey = input_binding_new("lkey", "left");
+	auto quit = input_binding_new("input.key.quit", "escape");
+
 	hades_parse_commandline(argv);
+
+	var_load("hades.conf");
 
 	gr_set_video();
 
@@ -82,11 +89,6 @@ void main(string[] argv)
 	auto nehe_b = gr_surface_open("textures/NeHe-B.dds");
 
 	gr_surface_bind(nehe_b);
-
-	auto ukey = input_binding_new("ukey", "up");
-	auto dkey = input_binding_new("dkey", "down");
-	auto lkey = input_binding_new("lkey", "left");
-	auto quit = input_binding_new("input.key.quit", "escape");
 
 	sg_geometry_load(suzanne, "models/cube.geo");
 
