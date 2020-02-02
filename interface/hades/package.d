@@ -32,6 +32,7 @@ public {
 	import hades.graphics_vertexformat;
 
 	import hades.scenegraph_camera;
+	import hades.scenegraph_cubesphere;
 	import hades.scenegraph_entity;
 	import hades.scenegraph_geometry;
 	import hades.scenegraph_light;

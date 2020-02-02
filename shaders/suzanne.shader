@@ -37,14 +37,14 @@ void main()
 #section .frag
 
 OUTPUT(0) vec4 fr_Color;
-OUTPUT(1) vec4 fr_Normal;
+//OUTPUT(1) vec4 fr_Normal;
 
 
 void main()
 {
 
 	fr_Color  = texture(g_surfaces[texunit], gr_TexCoords.st);
-	fr_Normal = gr_Normal;
+//	fr_Normal = gr_Normal;
 
 }
 

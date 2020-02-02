@@ -2,6 +2,7 @@
 
 #include "core/system.h"
 #include "core/types.h"
+#include "core/common.h"
 #include "core/hades.h"
 #include "core/list.h"
 #include "core/logger.h"

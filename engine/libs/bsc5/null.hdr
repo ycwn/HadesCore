@@ -1,0 +1,51 @@
+SIMPLE  =                    T / Standard FITS format                           
+BITPIX  =                    8 / Character information                          
+NAXIS   =                    0 / No image data array present                    
+EXTEND  =                    T / There may be standard extensions               
+BLOCKED =                    T / The file may be blocked                        
+ORIGIN  = 'ADC     '           / This file written at the ADC, NASA/GSFC        
+DATE    = '23/09/91'           / Date file written (dd/mm/yy)                   
+                                                                                
+COMMENT Preliminary Version of the Bright Star Catalogue, 5th Revised Edition   
+COMMENT                                                                         
+COMMENT The Bright Star Catalogue (BSC) is widely used as a source of basic     
+COMMENT astronomical and astrophysical data for stars brighter than magnitude   
+COMMENT 6.5.  The catalog contains the identifications of included stars in     
+COMMENT several other widely-used catalogs, double- and multiple-star           
+COMMENT identifications, indication of variability and variable-star            
+COMMENT identifiers, equatorial positions for B1900.0 and J2000.0, galactic     
+COMMENT coordinates, UBVRI photoelectric photometric data when they exist,      
+COMMENT spectral types on the Morgan-Keenan (MK) classification system, proper  
+COMMENT motions (J2000.0), parallax, radial- and rotational-velocity data, and  
+COMMENT multiple-star information (number of components, separation, and        
+COMMENT magnitude differences) for known nonsingle stars.  In addition to the   
+COMMENT data file, there is an extensive remarks file that gives more detailed  
+COMMENT information on individual entries.  This information includes star      
+COMMENT names, colors, spectra, variability details, binary characteristics,    
+COMMENT radial and rotational velocities for companion stars, duplicity         
+COMMENT information, dynamical parallaxes, stellar dimensions (radii and        
+COMMENT diameters), polarization, and membership in stellar groups and clusters.
+COMMENT The existence of remarks is flagged in the main data file.              
+COMMENT                                                                         
+COMMENT The BSC contains 9110 objects, of which 9096 are stars (14 objects      
+COMMENT cataloged in the original compilation of 1908 are novae or extragalactic
+COMMENT objects that have been retained to preserve the numbering, but most of  
+COMMENT their data are omitted), while the remarks section is slightly larger   
+COMMENT than the main catalog.  The present edition of the compilation includes 
+COMMENT many new data and the remarks section has been enlarged considerably.   
+COMMENT                                                                         
+COMMENT This preliminary version of the fifth edition of the Bright Star        
+COMMENT Catalogue supersedes the published and machine-readable versions of     
+COMMENT Hoffleit (1982, Yale University Observatory) and is intended for use    
+COMMENT until the final verison of this edition is completed.  It has been made 
+COMMENT available only for dissemination on the Astronomical Data Center CD ROM.
+COMMENT                                                                         
+COMMENT Source Catalog Reference: 1991, Hoffleit & Warren, Yale University      
+COMMENT  Observatory.                                                           
+COMMENT                                                                         
+COMMENT A copy of the documentation should accompany any computer-readable      
+COMMENT version of the catalog.  The FITS Table header(s) in this file only give
+COMMENT the basic format of the catalog.  Please refer to the documentation or  
+COMMENT source reference for a more detailed discussion of the data.            
+                                                                                
+END                                                                             

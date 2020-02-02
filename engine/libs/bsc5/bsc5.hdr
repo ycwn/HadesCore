@@ -1,0 +1,285 @@
+XTENSION= 'TABLE   '           / Table extension                                
+BITPIX  =                    8 / Character data                                 
+NAXIS   =                    2 / Simple 2-D matrix                              
+NAXIS1  =                  197 / Number of characters per record                
+NAXIS2  =                 9110 / Number of records in the table                 
+PCOUNT  =                    0 / No "random" parameters                         
+GCOUNT  =                    1 / Only one group                                 
+TFIELDS =                   54 / Number of data fields per record               
+EXTNAME = 'BSC5_Data'          / Bright Star Catalog, 5th Ed. (prelim), data    
+AUTHOR  = 'Hoffleit & Warren'                                                   
+REFERENC= '1991, Yale U Obs.'                                                   
+DATE    = '01/08/91'           / Date FITS table verified (dd/mm/yy)            
+                                                                                
+TTYPE1  = 'HR      '           / Harvard Revised (HR) = Bright Star (BS) number 
+TBCOL1  =                    1 / Start column                                   
+TFORM1  = 'I4      '           / Fortran format                                 
+                                                                                
+TTYPE2  = 'Name    '           / Name, generally Bayer and/or Flamsteed name    
+TBCOL2  =                    5 / Start column                                   
+TFORM2  = 'A10     '           / Fortran format                                 
+                                                                                
+TTYPE3  = 'DM_Cat  '           / Durchmusterung catalog ID, 'BD', 'CD', 'CP'    
+TBCOL3  =                   15 / Start column                                   
+TFORM3  = 'A2      '           / Fortran format                                 
+                                                                                
+TTYPE4  = 'DM      '           / Durchmusterung catalog number, SZZNNNNN        
+TBCOL4  =                   17 / Start column                                   
+TFORM4  = 'A9      '           / Fortran format                                 
+TNULL4  = '        '           / Null value                                     
+                                                                                
+TTYPE5  = 'HD      '           / Henry Draper Catalog (HD) number               
+TBCOL5  =                   26 / Start column                                   
+TFORM5  = 'I6      '           / Fortran format                                 
+                                                                                
+TTYPE6  = 'SAO     '           / SAO Catalog number                             
+TBCOL6  =                   32 / Start column                                   
+TFORM6  = 'I6      '           / Fortran format                                 
+                                                                                
+TTYPE7  = 'FK5     '           / FK5 star number                                
+TBCOL7  =                   38 / Start column                                   
+TFORM7  = 'I4      '           / Fortran format                                 
+                                                                                
+TTYPE8  = 'IR_Flag '           / "I" if infrared source                         
+TBCOL8  =                   42 / Start column                                   
+TFORM8  = 'A1      '           / Fortran format                                 
+TNULL8  = '        '           / Null value                                     
+                                                                                
+TTYPE9  = 'IR_Flag_Ref'        / Coded reference for infrared source            
+TBCOL9  =                   43 / Start column                                   
+TFORM9  = 'A1      '           / Fortran format                                 
+COMMENT IR_Flag_Ref: Blank if from NASA merged Infrared Catalogue, Schmitz et   
+COMMENT IR_Flag_Ref: al. 1978; ' if Engles et al. 1982). ':' if uncertain id.   
+                                                                                
+TTYPE10 = 'Multiple'           / Double or multiple-star code, see comment      
+TBCOL10 =                   44 / Start column                                   
+TFORM10 = 'A1      '           / Fortran format                                 
+COMMENT Multiple: 'W'=Worley (1978) update of the IDS; 'D'=Duplicity discovered 
+COMMENT Multiple: by occulation; 'S'=Duplicity discovered by speckle            
+COMMENT Multiple: interferometry.                                               
+                                                                                
+TTYPE11 = 'ADS     '           / Aitken's Double Star Catalog (ADS) designation 
+TBCOL11 =                   45 / Start column                                   
+TFORM11 = 'A5      '           / Fortran format                                 
+                                                                                
+TTYPE12 = 'ADS_Comp'           / ADS number components                          
+TBCOL12 =                   50 / Start column                                   
+TFORM12 = 'A2      '           / Fortran format                                 
+TNULL12 = '        '           / Null value                                     
+                                                                                
+TTYPE13 = 'Var_ID  '           / Variable star identification                   
+TBCOL13 =                   42 / Start column                                   
+TFORM13 = 'A9      '           / Fortran format                                 
+TNULL13 = '         '          / Null value                                     
+                                                                                
+TTYPE14 = 'RAH_1900'           / Hours RA, equinox B1900, epoch 1900.0          
+TBCOL14 =                   61 / Start column                                   
+TFORM14 = 'I2      '           / Fortran format                                 
+TUNIT14 = 'h       '           / Units are hours                                
+                                                                                
+TTYPE15 = 'RAM_1900'           / Minutes RA, equinox B1900, epoch 1900.0        
+TBCOL15 =                   63 / Start column                                   
+TFORM15 = 'I2      '           / Fortran format                                 
+TUNIT15 = 'min     '           / Units are minutes of time                      
+                                                                                
+TTYPE16 = 'RAS_1900'           / Seconds RA, equinox B1900, epoch 1900.0        
+TBCOL16 =                   65 / Start column                                   
+TFORM16 = 'F4.1    '           / Fortran format                                 
+TUNIT16 = 's       '           / Units are seconds of time                      
+                                                                                
+TTYPE17 = 'DecSign_1900'       / Sign Dec, equinox B1900, epoch 1900.0          
+TBCOL17 =                   69 / Start column                                   
+TFORM17 = 'A1      '           / Fortran format                                 
+                                                                                
+TTYPE18 = 'DecD_1900'          / Degrees Dec, equinox B1900, epoch 1900.0       
+TBCOL18 =                   70 / Start column                                   
+TFORM18 = 'I2      '           / Fortran format                                 
+TUNIT18 = 'deg     '           / Units are degrees                              
+                                                                                
+TTYPE19 = 'DecM_1900'          / Minutes Dec, equinox B1900, epoch 1900.0       
+TBCOL19 =                   72 / Start column                                   
+TFORM19 = 'I2      '           / Fortran format                                 
+TUNIT19 = 'arcmin  '           / Units are minutes of arc                       
+                                                                                
+TTYPE20 = 'DecS_1900'          / Seconds Dec, equinox B1900, epoch 1900.0       
+TBCOL20 =                   74 / Start column                                   
+TFORM20 = 'I2      '           / Fortran format                                 
+TUNIT20 = 'arcsec  '           / Units are seconds of arc                       
+                                                                                
+TTYPE21 = 'RAH     '           / Hours RA, equinox J2000, epoch 2000.0          
+TBCOL21 =                   76 / Start column                                   
+TFORM21 = 'I2      '           / Fortran format                                 
+TUNIT21 = 'h       '           / Units are hours                                
+                                                                                
+TTYPE22 = 'RAM     '           / Minutes RA, equinox J2000, epoch 2000.0        
+TBCOL22 =                   78 / Start column                                   
+TFORM22 = 'I2      '           / Fortran format                                 
+TUNIT22 = 'min     '           / Units are minutes of time                      
+                                                                                
+TTYPE23 = 'RAS     '           / Seconds RA, equinox J2000, epoch 2000.0        
+TBCOL23 =                   80 / Start column                                   
+TFORM23 = 'F4.1    '           / Fortran format                                 
+TUNIT23 = 's       '           / Units are seconds of time                      
+                                                                                
+TTYPE24 = 'DecSign '           / Sign Dec, equinox J2000, epoch 2000.0          
+TBCOL24 =                   84 / Start column                                   
+TFORM24 = 'A1      '           / Fortran format                                 
+                                                                                
+TTYPE25 = 'DecD    '           / Degrees Dec, equinox J2000, epoch 2000.0       
+TBCOL25 =                   85 / Start column                                   
+TFORM25 = 'I2      '           / Fortran format                                 
+TUNIT25 = 'deg     '           / Units are degrees                              
+                                                                                
+TTYPE26 = 'DecM    '           / Minutes Dec, equinox J2000, epoch 2000.0       
+TBCOL26 =                   87 / Start column                                   
+TFORM26 = 'I2      '           / Fortran format                                 
+TUNIT26 = 'arcmin  '           / Units are minutes of arc                       
+                                                                                
+TTYPE27 = 'DecS    '           / Seconds Dec, equinox J2000, epoch 2000.0       
+TBCOL27 =                   89 / Start column                                   
+TFORM27 = 'I2      '           / Fortran format                                 
+TUNIT27 = 'arcsec  '           / Units are seconds of arc                       
+                                                                                
+TTYPE28 = 'GLon    '           / Galactic longitude                             
+TBCOL28 =                   91 / Start column                                   
+TFORM28 = 'F6.2    '           / Fortran format                                 
+TUNIT28 = 'deg     '           / Units are degrees                              
+                                                                                
+TTYPE29 = 'GLat    '           / Galactic latitude                              
+TBCOL29 =                   97 / Start column                                   
+TFORM29 = 'F6.2    '           / Fortran format                                 
+TUNIT29 = 'deg     '           / Units are degrees                              
+                                                                                
+TTYPE30 = 'V       '           / Visual magnitude                               
+TBCOL30 =                  103 / Start column                                   
+TFORM30 = 'F5.2    '           / Fortran format                                 
+TUNIT30 = 'mag     '           / Units are magnitudes                           
+                                                                                
+TTYPE31 = 'V_Code  '           / Visual magnitude code                          
+TBCOL31 =                  108 / Start column                                   
+TFORM31 = 'A1      '           / Fortran format                                 
+COMMENT V_Code: ' '= V on UBV Johnson system; 'R'= HR magnitudes reduced to the 
+COMMENT V_Code: UBV system; 'H'= original HR magnitude.                         
+                                                                                
+TTYPE32 = 'V_Unc   '           / ':'=uncertain V; '?'=questionable V            
+TBCOL32 =                  109 / Start column                                   
+TFORM32 = 'A1      '           / Fortran format                                 
+                                                                                
+TTYPE33 = 'B_V     '           / B-V color in the UBV system                    
+TBCOL33 =                  110 / Start column                                   
+TFORM33 = 'F5.2    '           / Fortran format                                 
+TUNIT33 = 'mag     '           / Units are magnitudes                           
+TNULL33 = '        '           / Null value                                     
+                                                                                
+TTYPE34 = 'B_V_Unc '           / ':'=uncertain B-V; '?'=questionable B-V        
+TBCOL34 =                  115 / Start column                                   
+TFORM34 = 'A1      '           / Fortran format                                 
+                                                                                
+TTYPE35 = 'U_B     '           / U-B color in the UBV system                    
+TBCOL35 =                  116 / Start column                                   
+TFORM35 = 'F5.2    '           / Fortran format                                 
+TUNIT35 = 'mag     '           / Units are magnitudes                           
+TNULL35 = '        '           / Null value                                     
+                                                                                
+TTYPE36 = 'U_B_Unc '           / ':'=uncertain U-B; '?'=questionable U-B        
+TBCOL36 =                  121 / Start column                                   
+TFORM36 = 'A1      '           / Fortran format                                 
+                                                                                
+TTYPE37 = 'R_I     '           / R-I in system specified by R_I_Code            
+TBCOL37 =                  122 / Start column                                   
+TFORM37 = 'F5.2    '           / Fortran format                                 
+TUNIT37 = 'mag     '           / Units are magnitudes                           
+TNULL37 = '        '           / Null value                                     
+                                                                                
+TTYPE38 = 'R_I_Code'           / Code for R-I system                            
+TBCOL38 =                  127 / Start column                                   
+TFORM38 = 'A1      '           / Fortran format                                 
+                                                                                
+TTYPE39 = 'SpType  '           / Spectral type                                  
+TBCOL39 =                  128 / Start column                                   
+TFORM39 = 'A20     '           / Fortran format                                 
+                                                                                
+TTYPE40 = 'SpType_Code'        / Spectral type code                             
+TBCOL40 =                  148 / Start column                                   
+TFORM40 = 'A1      '           / Fortran format                                 
+                                                                                
+TTYPE41 = 'PM_RA   '           / Annual proper motion in RA J2000, FK5 system   
+TBCOL41 =                  149 / Start column                                   
+TFORM41 = 'F6.3    '           / Fortran format                                 
+TUNIT41 = 'arcsec/yr'          / Units are seconds of arc per year              
+                                                                                
+TTYPE42 = 'PM_Dec  '           / Annual proper motion in Dec J2000, FK5 system  
+TBCOL42 =                  155 / Start column                                   
+TFORM42 = 'F6.3    '           / Fortran format                                 
+TUNIT42 = 'arcsec/yr'          / Units are seconds of arc per year              
+                                                                                
+TTYPE43 = 'Par_Code'           / "D" if dynamical parallax, otherwise trig. par.
+TBCOL43 =                  161 / Start column                                   
+TFORM43 = 'A1      '           / Fortran format                                 
+TNULL43 = '        '           / Null value                                     
+                                                                                
+TTYPE44 = 'Parallax'           / Trigonometric parallax unless Par_Code="D"     
+TBCOL44 =                  162 / Start column                                   
+TFORM44 = 'F5.3    '           / Fortran format                                 
+TUNIT44 = 'arcsec  '           / Units are seconds of arc                       
+TNULL44 = '        '           / Null value                                     
+                                                                                
+TTYPE45 = 'RadVel  '           / Line of sight velocity (helio.)                
+TBCOL45 =                  167 / Start column                                   
+TFORM45 = 'I4      '           / Fortran format                                 
+TUNIT45 = 'km/s    '           / Units are kilometers per second                
+TNULL45 = '        '           / Null value                                     
+                                                                                
+TTYPE46 = 'RadVel_Comm'        / Radial velocity comments                       
+TBCOL46 =                  171 / Start column                                   
+TFORM46 = 'A4      '           / Fortran format                                 
+TNULL46 = '        '           / Null value                                     
+COMMENT RadVel_Comm: 'V' or 'V?'=variable or suspected variable radial velocity;
+COMMENT RadVel_Comm: 'SB', 'SB1', 'SB2'=spectroscopic binaries, single or double
+COMMENT RadVel_Comm: lined spectra; 'O'= orbital data available.                
+                                                                                
+TTYPE47 = 'RotVel_Comm'        / Rotational vel. descriptive chararacters       
+TBCOL47 =                  175 / Start column                                   
+TFORM47 = 'A2      '           / Fortran format                                 
+TNULL47 = '        '           / Null value                                     
+                                                                                
+TTYPE48 = 'RotVel  '           / Rotational velocity, v sin i                   
+TBCOL48 =                  177 / Start column                                   
+TFORM48 = 'I3      '           / Fortran format                                 
+TUNIT48 = 'km/s    '           / Units are kilometers per second                
+TNULL48 = '        '           / Null value                                     
+                                                                                
+TTYPE49 = 'RotVel_Unc'         / ":" if rotational velocity uncertain           
+TBCOL49 =                  180 / Start column                                   
+TFORM49 = 'A1      '           / Fortran format                                 
+TNULL49 = '        '           / Null value                                     
+                                                                                
+TTYPE50 = 'Mult_MDiff'         / Magnitude diff. of double, or brightest mult.  
+TBCOL50 =                  181 / Start column                                   
+TFORM50 = 'F4.1    '           / Fortran format                                 
+TUNIT50 = 'mag     '           / Units are magnitudes                           
+TNULL50 = '        '           / Null value                                     
+                                                                                
+TTYPE51 = 'Mult_Sep'           / Separation of components in Mult_MDiff         
+TBCOL51 =                  185 / Start column                                   
+TFORM51 = 'F6.1    '           / Fortran format                                 
+TUNIT51 = 'arcsec  '           / Units are seconds of arc                       
+TNULL51 = '        '           / Null value                                     
+                                                                                
+TTYPE52 = 'Mult_ID '           / Identifications of components in Mult_MDiff    
+TBCOL52 =                  191 / Start column                                   
+TFORM52 = 'A4      '           / Fortran format                                 
+TNULL52 = '        '           / Null value                                     
+COMMENT Mult_ID: 'O' if occultation binary.                                     
+                                                                                
+TTYPE53 = 'Mult_Cnt'           / Number of components assigned to a multiple    
+TBCOL53 =                  195 / Start column                                   
+TFORM53 = 'I2      '           / Fortran format                                 
+TNULL53 = '        '           / Null value                                     
+                                                                                
+TTYPE54 = 'Note_Flag'          / "*" if there is a note in table BSC5_Rem       
+TBCOL54 =                  197 / Start column                                   
+TFORM54 = 'A1      '           / Fortran format                                 
+TNULL54 = '        '           / Null value                                     
+                                                                                
+END                                                                             

@@ -17,7 +17,9 @@ typedef uint64_t  u64;
 typedef float   f32;
 typedef double  f64;
 
-typedef unsigned int  uint;
+typedef unsigned int    uint;
+typedef unsigned short  ushort;
+typedef unsigned char   byte;
 
 
 typedef float V2[2];
@@ -35,26 +37,6 @@ typedef simd4x4f mat4;
 typedef struct graphics graphics;
 typedef struct sound    sound;
 typedef struct input    input;
-
-
-static inline int   mini(int   x, int   y) { return (x < y)? x: y; }
-static inline uint  minu(uint  x, uint  y) { return (x < y)? x: y; }
-static inline float minf(float x, float y) { return (x < y)? x: y; }
-
-static inline int   maxi(int   x, int   y) { return (x > y)? x: y; }
-static inline uint  maxu(uint  x, uint  y) { return (x > y)? x: y; }
-static inline float maxf(float x, float y) { return (x > y)? x: y; }
-
-static inline int   clampi(int   x, int   min, int   max) { return mini(maxi(x, min), max); }
-static inline uint  clampu(uint  x, uint  min, uint  max) { return minu(maxu(x, min), max); }
-static inline float clampf(float x, float min, float max) { return minf(maxf(x, min), max); }
-
-
-#define countof(x)    (sizeof(x) / sizeof((x)[0]))
-#define mzero(x)      memset((x),  0, sizeof(x))
-#define szero(x)      memset(&(x), 0, sizeof(x))
-#define mfill(x, v)   do { for (int n=0; n < countof((x)); n++) (x)[n] = (v); } while (0)
-#define bitmask(t, n) (((t) (-((n) != 0)))  & (((t) -1) >> ((sizeof(t) * 8) - (n))))
 
 
 #include "druntime.h"

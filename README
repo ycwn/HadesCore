@@ -1,0 +1,7 @@
+
+A Vulkan-based renderer that once hoped to become a game engine.
+A lot of stuff is missing, but the renderer is capable of displaying
+textured meshes with postprocessing effects. There is no resource
+management.
+
+

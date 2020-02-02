@@ -13,6 +13,7 @@ enum {
 	MOUSE_DISABLED = 0,
 	MOUSE_ABSOLUTE = 1 << 0,
 	MOUSE_LOOK     = 1 << 1,
+	MOUSE_LOCKED   = 1 << 2
 };
 
 
@@ -71,10 +72,8 @@ typedef struct input_binding {
 
 input *input_create(const graphics *gfx);
 void   input_destroy();
-void   input_lock();
-void   input_unlock();
-void   input_reset();
-void   input_mousemode(int mode);
+int    input_get_mousemode();
+void   input_set_mousemode(int mode);
 void   input_update();
 
 input_binding *input_binding_new(const char *name, const char *def);

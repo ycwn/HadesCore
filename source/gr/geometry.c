@@ -2,6 +2,7 @@
 
 #include "core/system.h"
 #include "core/types.h"
+#include "core/common.h"
 #include "core/debug.h"
 #include "core/blob.h"
 #include "core/list.h"
@@ -241,6 +242,12 @@ void gr_geometry_commit_drawcalls(const gr_geometry *geo, gr_commandlist *cmdl)
 
 void gr_geometry_commit_buffers(const gr_geometry *geo, gr_vertexbuffer *vb)
 {
+
+	watch("%d", geo->vertices_count);
+	log_hexdump(LOG_DEBUG, geo->vertices, geo->vertices_size);
+
+	watch("%d", geo->indices_count);
+	log_hexdump(LOG_DEBUG, geo->indices, geo->indices_size);
 
 	gr_vertexbuffer_commit_vertices(vb, geo->vertices, geo->vertices_size);
 

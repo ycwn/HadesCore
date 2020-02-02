@@ -2,6 +2,7 @@
 
 #include "core/system.h"
 #include "core/types.h"
+#include "core/common.h"
 #include "core/debug.h"
 #include "core/algorithm.h"
 #include "core/list.h"

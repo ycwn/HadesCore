@@ -2,6 +2,7 @@
 
 #include "core/system.h"
 #include "core/types.h"
+#include "core/common.h"
 #include "core/debug.h"
 #include "core/list.h"
 #include "core/input.h"
@@ -118,26 +119,23 @@ void input_destroy()
 
 
 
-void input_lock()
+int input_get_mousemode()
 {
+
+	return in.mode;
+
 }
 
 
 
-void input_unlock()
+void input_set_mousemode(int mode)
 {
-}
 
+	//if ((in.mode ^ mode) & MOUSE_LOCKED != 0)
+		glfwSetInputMode(in.gfx->window, GLFW_CURSOR, (mode & MOUSE_LOCKED)? GLFW_CURSOR_DISABLED: GLFW_CURSOR_NORMAL);
 
+	in.mode = mode;
 
-void input_reset()
-{
-}
-
-
-
-void input_mousemode(int mode)
-{
 }
 
 
@@ -175,6 +173,9 @@ void input_update()
 	double mouse_y;
 
 	glfwGetCursorPos(in.gfx->window, &mouse_x, &mouse_y);
+
+	mouse_x /= 1024.0f;
+	mouse_y /= 576.0f;
 
 	mouse.velocity_x = (mouse_x - mouse.position_x) * *in.mouse_smoothing + mouse.velocity_x * (1.0f - *in.mouse_smoothing);
 	mouse.velocity_y = (mouse_y - mouse.position_y) * *in.mouse_smoothing + mouse.velocity_y * (1.0f - *in.mouse_smoothing);

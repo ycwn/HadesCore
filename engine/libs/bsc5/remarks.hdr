@@ -1,0 +1,27 @@
+XTENSION= 'TABLE   '           / Table extension                                
+BITPIX  =                    8 / Character data                                 
+NAXIS   =                    2 / Simple 2-D matrix                              
+NAXIS1  =                  132 / Number of characters per record                
+NAXIS2  =                 9188 / Number of records in the table                 
+PCOUNT  =                    0 / No "random" parameters                         
+GCOUNT  =                    1 / Only one group                                 
+TFIELDS =                    3 / Number of data fields per record               
+EXTNAME = 'BSC5_Rem'           / Bright Star Catalog, 5th ed. (prelim), remarks 
+AUTHOR  = 'Hoffleit & Warren'                                                   
+REFERENC= '1991, Yale U. Obs.'                                                  
+DATE    = '01/08/91'           / Date FITS table verified (dd/mm/yy)            
+                                                                                
+TTYPE1  = 'HR      '           / Harvard Revised (HR) = Bright Star (BS) number 
+TBCOL1  =                    1 / Start column                                   
+TFORM1  = 'I5      '           / Fortran format                                 
+                                                                                
+TTYPE2  = 'Remark_Cat'         / Remark category abbreviation, see comment      
+TBCOL2  =                    8 / Start column                                   
+TFORM2  = 'A4      '           / Fortran format                                 
+COMMENT Remark_Cat: Codes can be found in ADC document for the BSC4             
+                                                                                
+TTYPE3  = 'Remark  '           / Remarks in free form text                      
+TBCOL3  =                   13 / Start column                                   
+TFORM3  = 'A120    '           / Fortran format                                 
+                                                                                
+END                                                                             

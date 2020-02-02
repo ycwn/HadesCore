@@ -1,0 +1,24 @@
+
+######################################################
+#
+# Platform specific parts for Android
+#
+
+.PHONY: native-droid package-droid
+
+
+native-droid:
+	ndk-build -j$(cores)   \
+		NDK_DEBUG=1    \
+		NDK_OUT=build  \
+		NDK_LIBS_OUT=build/libs     \
+		NDK_APP_OUT=build/obj       \
+		NDK_APP_PROJECT_PATH=build  \
+		NDK_PROJECT_PATH=.          \
+		NDK_APPLICATION_MK=engine/android/Application.mk  \
+		APP_BUILD_SCRIPT=engine/android/Android.mk        \
+		_local_props=engine/android/default.properties
+
+package-droid:
+	ant -f engine/android/build.xml debug
+

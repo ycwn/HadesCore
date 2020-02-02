@@ -30,10 +30,15 @@ void gr_commandlist_clone(const gr_commandlist *cmdl, gr_commandlist *other, uin
 gr_command *gr_commandlist_append(gr_commandlist *cmdl, gr_shader *s, uint num, bool autoexpand);
 void        gr_commandlist_remove(gr_commandlist *cmdl, gr_command *cmd);
 
-static inline const gr_command *gr_commandlist_begin(const gr_commandlist *cmdl) { return &cmdl->commands[0]; }
-static inline const gr_command *gr_commandlist_end(  const gr_commandlist *cmdl) { return &cmdl->commands[cmdl->count]; }
-static inline const gr_command *gr_commandlist_front(const gr_commandlist *cmdl) { return &cmdl->commands[0]; }
-static inline const gr_command *gr_commandlist_back( const gr_commandlist *cmdl) { return &cmdl->commands[cmdl->count - 1]; }
+static inline gr_command *gr_commandlist_begin(gr_commandlist *cmdl) { return &cmdl->commands[0]; }
+static inline gr_command *gr_commandlist_end(  gr_commandlist *cmdl) { return &cmdl->commands[cmdl->count]; }
+static inline gr_command *gr_commandlist_front(gr_commandlist *cmdl) { return &cmdl->commands[0]; }
+static inline gr_command *gr_commandlist_back( gr_commandlist *cmdl) { return &cmdl->commands[cmdl->count - 1]; }
+
+static inline const gr_command *gr_commandlist_cbegin(const gr_commandlist *cmdl) { return &cmdl->commands[0]; }
+static inline const gr_command *gr_commandlist_cend(  const gr_commandlist *cmdl) { return &cmdl->commands[cmdl->count]; }
+static inline const gr_command *gr_commandlist_cfront(const gr_commandlist *cmdl) { return &cmdl->commands[0]; }
+static inline const gr_command *gr_commandlist_cback( const gr_commandlist *cmdl) { return &cmdl->commands[cmdl->count - 1]; }
 
 static inline void gr_commandlist_enqueue(gr_commandlist *cmdl) {
 	gr_commandqueue_enqueue(cmdl->commands, cmdl->count);

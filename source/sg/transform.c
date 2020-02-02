@@ -2,6 +2,7 @@
 
 #include "core/system.h"
 #include "core/types.h"
+#include "core/common.h"
 #include "core/debug.h"
 #include "core/list.h"
 #include "core/logger.h"
@@ -195,10 +196,10 @@ void sg_transform_rotate_angle(sg_transform *_xf, const float phi, const float t
 
 	sg_transform_rotate_quaternion(_xf,
 		simd4f_create(
-			-sin_th * cos_ph,
-			-cos_th * sin_ph,
-			-sin_th * sin_ph,
-			+cos_th * cos_ph));
+			sin_th * cos_ph,
+			cos_th * sin_ph,
+			sin_th * sin_ph,
+			cos_th * cos_ph));
 
 }
 

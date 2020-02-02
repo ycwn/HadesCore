@@ -27,9 +27,8 @@ void main(string[] argv)
 	auto lkey = input_binding_new("lkey", "left");
 	auto quit = input_binding_new("input.key.quit", "escape");
 
-	hades_parse_commandline(argv);
-
 	var_load("hades.conf");
+	hades_parse_commandline(argv);
 
 	gr_set_video();
 
@@ -75,13 +74,14 @@ void main(string[] argv)
 
 	log_printf(LOG_DEBUG, "SEE YOU AT THE PARTY, RICHTER!: %s", engine.buildinfo.user);
 
-	gr_postprocessor_attach(gr_shader_find("blurh"));
-	gr_postprocessor_attach(gr_shader_find("blurhv"));
-	gr_postprocessor_attach(gr_shader_find("scanline"));
+//	gr_postprocessor_attach(gr_shader_find("blurh"));
+//	gr_postprocessor_attach(gr_shader_find("blurhv"));
+//	gr_postprocessor_attach(gr_shader_find("scanline"));
 
 	auto scene   = sg_scenegraph_new("root");
 	auto camera  = sg_camera_new("eye");
-	auto suzanne = sg_geometry_new("Suzanne");
+	auto cube    = sg_geometry_new("cube");
+	auto atmo    = sg_cubesphere_new("atmosphere");
 	auto R       = sg_transform_new("cube");
 
 	auto nehe_r = gr_surface_open("textures/NeHe-R.dds");
@@ -90,24 +90,29 @@ void main(string[] argv)
 
 	gr_surface_bind(nehe_b);
 
-	sg_geometry_load(suzanne, "models/cube.geo");
+	sg_geometry_load(cube, "models/cube.geo");
+	sg_cubesphere_tesselate(atmo, 3, 3);
+	sg_cubesphere_add_shader(atmo, gr_shader_find("atmosphere"));
+
+	cube.entity.recalculate = true;
 
 	//sg_camera_ortho(camera, 2.0f, 2.0f, -1.0f, +1.0f);
-	sg_camera_perspective(camera, 90.0f, 0.001f, 100.0f);
+	sg_camera_perspective(camera, 55.0f, 0.001f, 100.0f);
 	sg_camera_attach(camera, scene);
 	sg_camera_activate(camera);
 
-	suzanne.entity.transform = R;
-//	camera.transform = R;
+	cube.entity.transform = R;
 
-	sg_entity_attach(&suzanne.entity, scene);
+	sg_entity_attach(&cube.entity, scene);
 
 	sg_scenegraph_activate(scene);
 
-	sg_transform_translate(R, [ 0.0f, 0.0f, -2.0f, 0.0f ]);
+	sg_transform_translate(R, [ 0.0f, 0.0f, -3.0f, 0.0f ]);
 
 	float x = 0.0f;
 	uint  n = 0;
+
+	input_set_mousemode(MOUSE_LOOK | MOUSE_LOCKED);
 
 	while (hades_update()) {
 
@@ -115,8 +120,12 @@ void main(string[] argv)
 			break;
 
 		sg_transform_rotate_angle(R, x, x * 0.9f);
-		suzanne.entity.recalculate = true;
+		//sg_transform_rotate_angle(R, mouse.bank, mouse.pitch);
+		cube.entity.recalculate = true;
 		x += 0.02f;
+
+//		writefln("mouse.bank  = %f", mouse.bank);
+//		writefln("mouse.pitch = %f", mouse.pitch);
 
 		if (ukey.state == KEY_PRESSED) { gr_surface_unbind(nehe_r); gr_surface_unbind(nehe_g); gr_surface_bind(nehe_b); }
 		if (dkey.state == KEY_PRESSED) { gr_surface_unbind(nehe_g); gr_surface_unbind(nehe_b); gr_surface_bind(nehe_r); }
@@ -126,7 +135,8 @@ void main(string[] argv)
 
 	gr_flush();
 
-	sg_geometry_del(suzanne);
+	sg_geometry_del(cube);
+	//sg_cubesphere_del(atmo);
 	sg_camera_del(camera);
 	sg_scenegraph_del(scene);
 
